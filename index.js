@@ -436,6 +436,12 @@ function getConnectorPoints(from, to) {
         removeTarget(target.id);
         return;
       }
+      if (event.evt.button === 0 && event.evt.altKey) {
+        activeTargetId = target.id;
+        updateObjects();
+        layer.batchDraw();
+        return;
+      }
       if (event.evt.button !== 0) {
         return;
       }
