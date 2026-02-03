@@ -223,14 +223,24 @@ function getTransitionPoints(from, to) {
       const label = layer.findOne('#' + state.id + '-label');
       if (node) {
         const isHighlighted = activeStateId && state.id === activeStateId;
-        node.stroke(
-          isHighlighted ? COLORS.nodeStrokeHighlight : COLORS.nodeStroke
-        );
+        const nextStroke = isHighlighted
+          ? COLORS.nodeStrokeHighlight
+          : COLORS.nodeStroke;
+        if (node.getAttr('cachedStroke') !== nextStroke) {
+          node.stroke(nextStroke);
+          node.setAttr('cachedStroke', nextStroke);
+          node.cache();
+        }
       }
       node.x(state.x);
       node.y(state.y);
       if (label) {
-        label.text(state.label || state.id);
+        const nextText = state.label || state.id;
+        if (label.getAttr('cachedText') !== nextText) {
+          label.text(nextText);
+          label.setAttr('cachedText', nextText);
+          label.cache();
+        }
         label.x(state.x);
         label.y(state.y);
         label.offsetX(label.width() / 2);
@@ -255,24 +265,27 @@ function getTransitionPoints(from, to) {
       );
       line.points(points);
       if (label && labelText && labelBg) {
-        labelText.text(
-          `${getStateLabelById(transition.from)} to ${getStateLabelById(transition.to)}`
-        );
+        const nextText = `${getStateLabelById(transition.from)} to ${getStateLabelById(transition.to)}`;
         const midX = (points[0] + points[2]) / 2;
         const midY = (points[1] + points[3]) / 2;
         label.position({ x: midX, y: midY });
-        const textWidth = labelText.width();
-        const textHeight = labelText.height();
-        const bgWidth = textWidth * 1.2;
-        const bgHeight = textHeight * 2;
-        labelBg.size({
-          width: bgWidth,
-          height: bgHeight,
-        });
-        labelText.position({
-          x: (bgWidth - textWidth) / 2,
-          y: (bgHeight - textHeight) / 2,
-        });
+        if (labelText.getAttr('cachedText') !== nextText) {
+          labelText.text(nextText);
+          labelText.setAttr('cachedText', nextText);
+          const textWidth = labelText.width();
+          const textHeight = labelText.height();
+          const bgWidth = textWidth * 1.2;
+          const bgHeight = textHeight * 2;
+          labelBg.size({
+            width: bgWidth,
+            height: bgHeight,
+          });
+          labelText.position({
+            x: (bgWidth - textWidth) / 2,
+            y: (bgHeight - textHeight) / 2,
+          });
+          label.cache();
+        }
         const rect = label.getClientRect({ relativeTo: layer });
         label.offsetX(rect.width / 2);
         label.offsetY(rect.height / 2);
@@ -423,6 +436,10 @@ function getTransitionPoints(from, to) {
       align: 'center',
       listening: true,
     });
+    labelText.setAttr(
+      'cachedText',
+      `${getStateLabelById(transition.from)} to ${getStateLabelById(transition.to)}`
+    );
     const textWidth = labelText.width();
     const textHeight = labelText.height();
     const bgWidth = textWidth * 1.5;
@@ -438,6 +455,7 @@ function getTransitionPoints(from, to) {
     const rect = label.getClientRect({ relativeTo: layer });
     label.offsetX(rect.width / 2);
     label.offsetY(rect.height / 2);
+    label.cache();
 
     const handleMiddleClick = (event) => {
       if (event.evt.button !== 1) {
@@ -552,8 +570,11 @@ function getTransitionPoints(from, to) {
       radius: 50,
       shadowBlur: 12,
       shadowColor: COLORS.nodeShadow,
+      shadowForStrokeEnabled: false,
       draggable: true,
     });
+    node.setAttr('cachedStroke', node.stroke());
+    node.cache();
     layer.add(node);
 
     const label = new Konva.Text({
@@ -565,6 +586,8 @@ function getTransitionPoints(from, to) {
       align: 'center',
       listening: false,
     });
+    label.setAttr('cachedText', label.text());
+    label.cache();
     label.offsetX(label.width() / 2);
     label.offsetY(label.height() / 2);
     layer.add(label);
