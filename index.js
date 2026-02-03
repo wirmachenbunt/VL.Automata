@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     nodeStrokeHighlight: '#f6a21a',
     nodeShadow: 'rgba(0, 0, 0, 0.35)',
     label: '#eaf7ff',
-    connectorCyan: '#28e5ff',
+    transitionCyan: '#28e5ff',
   };
 
   const stage = new Konva.Stage({
@@ -25,25 +25,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const layer = new Konva.Layer();
   stage.add(layer);
 
-  let nextTargetId = 0;
-  const targets = [
+  let nextStateId = 0;
+  const states = [
     {
-      id: 'target-' + nextTargetId,
-      label: 'target-' + nextTargetId,
+      id: 'state-' + nextStateId,
+      label: 'state-' + nextStateId,
       x: stage.width() / 2,
       y: stage.height() / 2,
     },
   ];
-  nextTargetId += 1;
-  let activeTargetId = targets[0].id;
+  nextStateId += 1;
+  let activeStateId = states[0].id;
   let activeLabelEditor = null;
 
   function printStateAsJson() {
-    const state = {
-      targets: targets.map((target) => ({ ...target })),
-      connectors: connectors.map((connector) => ({ ...connector })),
+    const snapshot = {
+      states: states.map((state) => ({ ...state })),
+      transitions: transitions.map((transition) => ({ ...transition })),
     };
-    const json = JSON.stringify(state, null, 2);
+    const json = JSON.stringify(snapshot, null, 2);
     if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
         .writeText(json)
@@ -59,9 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearCurrentState() {
-    targets.forEach((target) => {
-      const node = layer.findOne('#' + target.id);
-      const label = layer.findOne('#' + target.id + '-label');
+    states.forEach((state) => {
+      const node = layer.findOne('#' + state.id);
+      const label = layer.findOne('#' + state.id + '-label');
       if (node) {
         node.destroy();
       }
@@ -69,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
         label.destroy();
       }
     });
-    connectors.forEach((connect) => {
-      const line = layer.findOne('#' + connect.id);
-      const label = layer.findOne('#' + connect.id + '-label');
+    transitions.forEach((transition) => {
+      const line = layer.findOne('#' + transition.id);
+      const label = layer.findOne('#' + transition.id + '-label');
       if (line) {
         line.destroy();
       }
@@ -79,55 +79,61 @@ document.addEventListener('DOMContentLoaded', () => {
         label.destroy();
       }
     });
-    targets.length = 0;
-    connectors.length = 0;
-    pendingConnectorFrom = null;
-    tempConnector.visible(false);
+    states.length = 0;
+    transitions.length = 0;
+    pendingTransitionFrom = null;
+    tempTransition.visible(false);
   }
 
-  function rebuildStateFromJson(state) {
-    const incomingTargets = Array.isArray(state.targets) ? state.targets : [];
-    const incomingConnectors = Array.isArray(state.connectors)
-      ? state.connectors
+  function rebuildStateFromJson(data) {
+    const incomingStates = Array.isArray(data.states)
+      ? data.states
+      : Array.isArray(data.targets)
+        ? data.targets
+        : [];
+    const incomingTransitions = Array.isArray(data.transitions)
+      ? data.transitions
+      : Array.isArray(data.connectors)
+        ? data.connectors
       : [];
 
     clearCurrentState();
 
-    incomingTargets.forEach((target) => {
-      if (!target || !target.id || typeof target.x !== 'number' || typeof target.y !== 'number') {
+    incomingStates.forEach((state) => {
+      if (!state || !state.id || typeof state.x !== 'number' || typeof state.y !== 'number') {
         return;
       }
-      const safeTarget = {
-        id: String(target.id),
-        label: typeof target.label === 'string' ? target.label : String(target.id),
-        x: target.x,
-        y: target.y,
+      const safeState = {
+        id: String(state.id),
+        label: typeof state.label === 'string' ? state.label : String(state.id),
+        x: state.x,
+        y: state.y,
       };
-      targets.push(safeTarget);
-      createTarget(safeTarget);
+      states.push(safeState);
+      createState(safeState);
     });
 
-    incomingConnectors.forEach((connector) => {
-      if (!connector || !connector.id || !connector.from || !connector.to) {
+    incomingTransitions.forEach((transition) => {
+      if (!transition || !transition.id || !transition.from || !transition.to) {
         return;
       }
-      const safeConnector = {
-        id: String(connector.id),
-        from: String(connector.from),
-        to: String(connector.to),
+      const safeTransition = {
+        id: String(transition.id),
+        from: String(transition.from),
+        to: String(transition.to),
       };
-      connectors.push(safeConnector);
-      createConnector(safeConnector);
+      transitions.push(safeTransition);
+      createTransition(safeTransition);
     });
 
-    nextTargetId = targets.length
-      ? Math.max(...targets.map((t) => parseInt(String(t.id).split('-').pop(), 10) || 0)) + 1
+    nextStateId = states.length
+      ? Math.max(...states.map((s) => parseInt(String(s.id).split('-').pop(), 10) || 0)) + 1
       : 0;
-    nextConnectorId = connectors.length
-      ? Math.max(...connectors.map((c) => parseInt(String(c.id).split('-').pop(), 10) || 0)) + 1
+    nextTransitionId = transitions.length
+      ? Math.max(...transitions.map((t) => parseInt(String(t.id).split('-').pop(), 10) || 0)) + 1
       : 0;
 
-    activeTargetId = targets.length ? targets[0].id : null;
+    activeStateId = states.length ? states[0].id : null;
     updateObjects();
     layer.batchDraw();
   }
@@ -175,13 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   
 
-  function getTargetLabelById(targetId) {
-    const target = targets.find((item) => item.id === targetId);
-    return target ? target.label || target.id : targetId;
+  function getStateLabelById(stateId) {
+    const state = states.find((item) => item.id === stateId);
+    return state ? state.label || state.id : stateId;
   }
 
 
-function getConnectorPoints(from, to) {
+function getTransitionPoints(from, to) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   let angle = Math.atan2(-dy, dx);
@@ -196,61 +202,61 @@ function getConnectorPoints(from, to) {
   ];
 }
 
-  const connectors = [];
-  let nextConnectorId = 0;
-  let pendingConnectorFrom = null;
-  const tempConnector = new Konva.Arrow({
-    stroke: COLORS.connectorCyan,
-    fill: COLORS.connectorCyan,
+  const transitions = [];
+  let nextTransitionId = 0;
+  let pendingTransitionFrom = null;
+  const tempTransition = new Konva.Arrow({
+    stroke: COLORS.transitionCyan,
+    fill: COLORS.transitionCyan,
     pointerLength: 8,
     pointerWidth: 8,
     dash: [6, 4],
     listening: false,
     visible: false,
   });
-  layer.add(tempConnector);
+  layer.add(tempTransition);
 
 // update all objects on the canvas from the state of the app
   function updateObjects() {
-    targets.forEach((target) => {
-      const node = layer.findOne('#' + target.id);
-      const label = layer.findOne('#' + target.id + '-label');
+    states.forEach((state) => {
+      const node = layer.findOne('#' + state.id);
+      const label = layer.findOne('#' + state.id + '-label');
       if (node) {
-        const isHighlighted = activeTargetId && target.id === activeTargetId;
+        const isHighlighted = activeStateId && state.id === activeStateId;
         node.stroke(
           isHighlighted ? COLORS.nodeStrokeHighlight : COLORS.nodeStroke
         );
       }
-      node.x(target.x);
-      node.y(target.y);
+      node.x(state.x);
+      node.y(state.y);
       if (label) {
-        label.text(target.label || target.id);
-        label.x(target.x);
-        label.y(target.y);
+        label.text(state.label || state.id);
+        label.x(state.x);
+        label.y(state.y);
         label.offsetX(label.width() / 2);
         label.offsetY(label.height() / 2);
       }
     });
-    connectors.forEach((connect) => {
-      const line = layer.findOne('#' + connect.id);
-      const label = layer.findOne('#' + connect.id + '-label');
-      const labelText = layer.findOne('#' + connect.id + '-label-text');
-      const labelBg = layer.findOne('#' + connect.id + '-label-bg');
-      const fromNode = layer.findOne('#' + connect.from);
-      const toNode = layer.findOne('#' + connect.to);
+    transitions.forEach((transition) => {
+      const line = layer.findOne('#' + transition.id);
+      const label = layer.findOne('#' + transition.id + '-label');
+      const labelText = layer.findOne('#' + transition.id + '-label-text');
+      const labelBg = layer.findOne('#' + transition.id + '-label-bg');
+      const fromNode = layer.findOne('#' + transition.from);
+      const toNode = layer.findOne('#' + transition.to);
 
       if (!fromNode || !toNode) {
         return;
       }
 
-      const points = getConnectorPoints(
+      const points = getTransitionPoints(
         fromNode.position(),
         toNode.position()
       );
       line.points(points);
       if (label && labelText && labelBg) {
         labelText.text(
-          `${getTargetLabelById(connect.from)} to ${getTargetLabelById(connect.to)}`
+          `${getStateLabelById(transition.from)} to ${getStateLabelById(transition.to)}`
         );
         const midX = (points[0] + points[2]) / 2;
         const midY = (points[1] + points[3]) / 2;
@@ -273,9 +279,9 @@ function getConnectorPoints(from, to) {
         label.moveToTop();
       }
     });
-    targets.forEach((target) => {
-      const node = layer.findOne('#' + target.id);
-      const label = layer.findOne('#' + target.id + '-label');
+    states.forEach((state) => {
+      const node = layer.findOne('#' + state.id);
+      const label = layer.findOne('#' + state.id + '-label');
       if (node) {
         node.moveToTop();
       }
@@ -293,29 +299,29 @@ function getConnectorPoints(from, to) {
     };
   }
 
-  function updateTempConnector(pointer) {
-    if (!pendingConnectorFrom || !pointer) {
+  function updateTempTransition(pointer) {
+    if (!pendingTransitionFrom || !pointer) {
       return;
     }
     const shape = stage.getIntersection(pointer);
-    if (shape && shape.id && shape.id() === pendingConnectorFrom) {
-      tempConnector.visible(false);
+    if (shape && shape.id && shape.id() === pendingTransitionFrom) {
+      tempTransition.visible(false);
       layer.batchDraw();
       return;
     }
-    const fromNode = layer.findOne('#' + pendingConnectorFrom);
+    const fromNode = layer.findOne('#' + pendingTransitionFrom);
     if (!fromNode) {
       return;
     }
     const stagePoint = getStagePointFromPointer(pointer);
-    const points = getConnectorPoints(fromNode.position(), stagePoint);
-    tempConnector.points(points);
-    tempConnector.visible(true);
-    tempConnector.moveToTop();
+    const points = getTransitionPoints(fromNode.position(), stagePoint);
+    tempTransition.points(points);
+    tempTransition.visible(true);
+    tempTransition.moveToTop();
     layer.batchDraw();
   }
 
-  function startEditingTargetLabel(target, label) {
+  function startEditingStateLabel(state, label) {
     if (activeLabelEditor) {
       activeLabelEditor.remove();
       activeLabelEditor = null;
@@ -332,7 +338,7 @@ function getConnectorPoints(from, to) {
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.value = target.label || label.text();
+    input.value = state.label || label.text();
     input.style.position = 'absolute';
     input.style.top = `${areaPosition.y}px`;
     input.style.left = `${areaPosition.x}px`;
@@ -363,8 +369,8 @@ function getConnectorPoints(from, to) {
 
     const commit = () => {
       const newText = input.value.trim();
-      target.label = newText ? newText : target.label;
-      label.text(target.label || target.id);
+      state.label = newText ? newText : state.label;
+      label.text(state.label || state.id);
       cleanup();
       updateObjects();
       layer.batchDraw();
@@ -386,22 +392,22 @@ function getConnectorPoints(from, to) {
   }
 
 // generate nodes for the app
-  function createConnector(connect) {
+  function createTransition(transition) {
     const line = new Konva.Arrow({
-      stroke: COLORS.connectorCyan,
-      id: connect.id,
-      fill: COLORS.connectorCyan,
+      stroke: COLORS.transitionCyan,
+      id: transition.id,
+      fill: COLORS.transitionCyan,
       pointerLength: 8,
       pointerWidth: 8,
     });
     layer.add(line);
 
     const label = new Konva.Group({
-      id: connect.id + '-label',
+      id: transition.id + '-label',
       listening: true,
     });
     const labelBg = new Konva.Rect({
-      id: connect.id + '-label-bg',
+      id: transition.id + '-label-bg',
       fill: 'rgb(99, 99, 99)',
       cornerRadius: 8,
       width: 0,
@@ -409,8 +415,8 @@ function getConnectorPoints(from, to) {
       listening: true,
     });
     const labelText = new Konva.Text({
-      id: connect.id + '-label-text',
-      text: `${getTargetLabelById(connect.from)} to ${getTargetLabelById(connect.to)}`,
+      id: transition.id + '-label-text',
+      text: `${getStateLabelById(transition.from)} to ${getStateLabelById(transition.to)}`,
       fontSize: 12,
       fontFamily: 'Arial',
       fill: COLORS.label,
@@ -438,23 +444,23 @@ function getConnectorPoints(from, to) {
         return;
       }
       event.evt.preventDefault();
-      removeConnector(connect.id);
+      removeTransition(transition.id);
     };
 
     labelBg.on('mousedown', handleMiddleClick);
     labelText.on('mousedown', handleMiddleClick);
   }
 
-  function removeConnector(connectorId, skipUpdate = false) {
-    const index = connectors.findIndex(
-      (connector) => connector.id === connectorId
+  function removeTransition(transitionId, skipUpdate = false) {
+    const index = transitions.findIndex(
+      (transition) => transition.id === transitionId
     );
     if (index === -1) {
       return;
     }
-    connectors.splice(index, 1);
-    const line = layer.findOne('#' + connectorId);
-    const label = layer.findOne('#' + connectorId + '-label');
+    transitions.splice(index, 1);
+    const line = layer.findOne('#' + transitionId);
+    const label = layer.findOne('#' + transitionId + '-label');
     if (line) {
       line.destroy();
     }
@@ -467,53 +473,53 @@ function getConnectorPoints(from, to) {
     }
   }
 
-  function connectorExists(fromId, toId) {
-    return connectors.some(
-      (connector) => connector.from === fromId && connector.to === toId
+  function transitionExists(fromId, toId) {
+    return transitions.some(
+      (transition) => transition.from === fromId && transition.to === toId
     );
   }
 
-  function addConnector(fromId, toId) {
+  function addTransition(fromId, toId) {
     if (fromId === toId) {
       return;
     }
-    if (connectorExists(fromId, toId)) {
+    if (transitionExists(fromId, toId)) {
       return;
     }
-    const connect = {
-      id: 'connector-' + nextConnectorId,
+    const transition = {
+      id: 'transition-' + nextTransitionId,
       from: fromId,
       to: toId,
     };
-    nextConnectorId += 1;
-    connectors.push(connect);
-    createConnector(connect);
+    nextTransitionId += 1;
+    transitions.push(transition);
+    createTransition(transition);
     updateObjects();
     layer.batchDraw();
    
   }
 
-  connectors.forEach((connect) => {
-    createConnector(connect);
+  transitions.forEach((transition) => {
+    createTransition(transition);
   });
 
-  function removeTarget(targetId) {
-    if (targets.length <= 1) {
+  function removeState(stateId) {
+    if (states.length <= 1) {
       return;
     }
-    const index = targets.findIndex((target) => target.id === targetId);
+    const index = states.findIndex((state) => state.id === stateId);
     if (index === -1) {
       return;
     }
 
-    if (pendingConnectorFrom === targetId) {
-      pendingConnectorFrom = null;
-      tempConnector.visible(false);
+    if (pendingTransitionFrom === stateId) {
+      pendingTransitionFrom = null;
+      tempTransition.visible(false);
     }
 
-    targets.splice(index, 1);
-    const node = layer.findOne('#' + targetId);
-    const label = layer.findOne('#' + targetId + '-label');
+    states.splice(index, 1);
+    const node = layer.findOne('#' + stateId);
+    const label = layer.findOne('#' + stateId + '-label');
     if (node) {
       node.destroy();
     }
@@ -521,25 +527,25 @@ function getConnectorPoints(from, to) {
       label.destroy();
     }
 
-    const related = connectors.filter(
-      (connector) => connector.from === targetId || connector.to === targetId
+    const related = transitions.filter(
+      (transition) => transition.from === stateId || transition.to === stateId
     );
-    related.forEach((connector) => {
-      removeConnector(connector.id, true);
+    related.forEach((transition) => {
+      removeTransition(transition.id, true);
     });
 
-    if (activeTargetId === targetId) {
-      activeTargetId = targets.length ? targets[0].id : null;
+    if (activeStateId === stateId) {
+      activeStateId = states.length ? states[0].id : null;
     }
     updateObjects();
     layer.batchDraw();
    
   }
 
-  function createTarget(target) {
-    const isHighlighted = target.id === activeTargetId;
+  function createState(state) {
+    const isHighlighted = state.id === activeStateId;
     const node = new Konva.Circle({
-      id: target.id,
+      id: state.id,
       fill: COLORS.nodeFill,
       stroke: isHighlighted ? COLORS.nodeStrokeHighlight : COLORS.nodeStroke,
       strokeWidth: 4,
@@ -551,8 +557,8 @@ function getConnectorPoints(from, to) {
     layer.add(node);
 
     const label = new Konva.Text({
-      id: target.id + '-label',
-      text: target.label || target.id,
+      id: state.id + '-label',
+      text: state.label || state.id,
       fontSize: 14,
       fontFamily: 'Arial',
       fill: COLORS.label,
@@ -565,18 +571,18 @@ function getConnectorPoints(from, to) {
 
     node.on('contextmenu', (event) => {
       event.evt.preventDefault();
-      pendingConnectorFrom = target.id;
-      updateTempConnector(stage.getPointerPosition());
+      pendingTransitionFrom = state.id;
+      updateTempTransition(stage.getPointerPosition());
     });
 
     node.on('mousedown', (event) => {
       if (event.evt.button === 1) {
         event.evt.preventDefault();
-        removeTarget(target.id);
+        removeState(state.id);
         return;
       }
       if (event.evt.button === 0 && event.evt.altKey) {
-        activeTargetId = target.id;
+        activeStateId = state.id;
         updateObjects();
         layer.batchDraw();
         return;
@@ -584,14 +590,14 @@ function getConnectorPoints(from, to) {
       if (event.evt.button !== 0) {
         return;
       }
-      if (!pendingConnectorFrom) {
+      if (!pendingTransitionFrom) {
         return;
       }
 
-      const fromId = pendingConnectorFrom;
-      pendingConnectorFrom = null;
-      tempConnector.visible(false);
-      addConnector(fromId, target.id);
+      const fromId = pendingTransitionFrom;
+      pendingTransitionFrom = null;
+      tempTransition.visible(false);
+      addTransition(fromId, state.id);
     });
 
 
@@ -603,8 +609,8 @@ function getConnectorPoints(from, to) {
 
     node.on('dragmove', () => {
       // mutate the state
-      target.x = node.x();
-      target.y = node.y();
+      state.x = node.x();
+      state.y = node.y();
 
       // update nodes from the new state
       updateObjects();
@@ -614,27 +620,27 @@ function getConnectorPoints(from, to) {
 
     node.on('dblclick', (event) => {
       event.cancelBubble = true;
-      startEditingTargetLabel(target, label);
+      startEditingStateLabel(state, label);
     });
   }
 
-  function addTargetAt(x, y) {
-    const target = {
-      id: 'target-' + nextTargetId,
-      label: 'target-' + nextTargetId,
+  function addStateAt(x, y) {
+    const state = {
+      id: 'state-' + nextStateId,
+      label: 'state-' + nextStateId,
       x,
       y,
     };
-    nextTargetId += 1;
-    targets.push(target);
-    createTarget(target);
+    nextStateId += 1;
+    states.push(state);
+    createState(state);
     updateObjects();
     layer.batchDraw();
    
   }
 
-  targets.forEach((target) => {
-    createTarget(target);
+  states.forEach((state) => {
+    createState(state);
   });
 
   updateObjects();
@@ -652,7 +658,7 @@ function getConnectorPoints(from, to) {
     const scale = stage.scaleX();
     const x = (pointer.x - stage.x()) / scale;
     const y = (pointer.y - stage.y()) / scale;
-    addTargetAt(x, y);
+    addStateAt(x, y);
   });
 
   stage.on('mousedown', (e) => {
@@ -662,19 +668,19 @@ function getConnectorPoints(from, to) {
     if (e.evt.button !== 0) {
       return;
     }
-    if (!pendingConnectorFrom) {
+    if (!pendingTransitionFrom) {
       return;
     }
-    pendingConnectorFrom = null;
-    tempConnector.visible(false);
+    pendingTransitionFrom = null;
+    tempTransition.visible(false);
     layer.batchDraw();
   });
 
   stage.on('mousemove', () => {
-    if (!pendingConnectorFrom) {
+    if (!pendingTransitionFrom) {
       return;
     }
-    updateTempConnector(stage.getPointerPosition());
+    updateTempTransition(stage.getPointerPosition());
   });
 
   const scaleBy = 1.05;
