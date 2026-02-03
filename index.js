@@ -25,40 +25,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const layer = new Konva.Layer();
   stage.add(layer);
 
-// function to generate a list of "targets" (circles)
-function generateTargets() {
-  const number = 10;
-  const result = [];
-  while (result.length < number) {
-    result.push({
-      id: 'target-' + result.length,
-      x: stage.width() * Math.random(),
-      y: stage.height() * Math.random(),
-    });
-  }
-  return result;
-}
+  let nextTargetId = 0;
+  const targets = [
+    {
+      id: 'target-' + nextTargetId,
+      x: stage.width() / 2,
+      y: stage.height() / 2,
+    },
+  ];
+  nextTargetId += 1;
+  let activeTargetId = targets[0].id;
 
-  const targets = generateTargets();
-
-// function to generate arrows between targets
-function generateConnectors() {
-  const number = 10;
-  const result = [];
-  while (result.length < number) {
-    const from = 'target-' + Math.floor(Math.random() * targets.length);
-    const to = 'target-' + Math.floor(Math.random() * targets.length);
-    if (from === to) {
-      continue;
-    }
-    result.push({
-      id: 'connector-' + result.length,
-      from: from,
-      to: to,
-    });
-  }
-  return result;
-}
 
 function getConnectorPoints(from, to) {
   const dx = to.x - from.x;
@@ -75,7 +52,8 @@ function getConnectorPoints(from, to) {
   ];
 }
 
-  const connectors = generateConnectors();
+  const connectors = [];
+  let nextConnectorId = 0;
   let pendingConnectorFrom = null;
   const tempConnector = new Konva.Arrow({
     stroke: COLORS.connectorCyan,
@@ -93,11 +71,19 @@ function getConnectorPoints(from, to) {
     targets.forEach((target) => {
       const node = layer.findOne('#' + target.id);
       const label = layer.findOne('#' + target.id + '-label');
+      if (node) {
+        const isHighlighted = activeTargetId && target.id === activeTargetId;
+        node.stroke(
+          isHighlighted ? COLORS.nodeStrokeHighlight : COLORS.nodeStroke
+        );
+      }
       node.x(target.x);
       node.y(target.y);
       if (label) {
         label.x(target.x);
         label.y(target.y);
+        label.offsetX(label.width() / 2);
+        label.offsetY(label.height() / 2);
       }
     });
     connectors.forEach((connect) => {
@@ -107,6 +93,10 @@ function getConnectorPoints(from, to) {
       const labelBg = layer.findOne('#' + connect.id + '-label-bg');
       const fromNode = layer.findOne('#' + connect.from);
       const toNode = layer.findOne('#' + connect.to);
+
+      if (!fromNode || !toNode) {
+        return;
+      }
 
       const points = getConnectorPoints(
         fromNode.position(),
@@ -119,7 +109,7 @@ function getConnectorPoints(from, to) {
         label.position({ x: midX, y: midY });
         const textWidth = labelText.width();
         const textHeight = labelText.height();
-        const bgWidth = textWidth * 1.5;
+        const bgWidth = textWidth * 1.2;
         const bgHeight = textHeight * 2;
         labelBg.size({
           width: bgWidth,
@@ -132,6 +122,17 @@ function getConnectorPoints(from, to) {
         const rect = label.getClientRect({ relativeTo: layer });
         label.offsetX(rect.width / 2);
         label.offsetY(rect.height / 2);
+        label.moveToTop();
+      }
+    });
+    targets.forEach((target) => {
+      const node = layer.findOne('#' + target.id);
+      const label = layer.findOne('#' + target.id + '-label');
+      if (node) {
+        node.moveToTop();
+      }
+      if (label) {
+        label.moveToTop();
       }
     });
   }
@@ -179,22 +180,24 @@ function getConnectorPoints(from, to) {
 
     const label = new Konva.Group({
       id: connect.id + '-label',
-      listening: false,
+      listening: true,
     });
     const labelBg = new Konva.Rect({
       id: connect.id + '-label-bg',
-      fill: 'rgba(0, 120, 255, 0.75)',
-      cornerRadius: 2,
+      fill: 'rgb(99, 99, 99)',
+      cornerRadius: 8,
       width: 0,
       height: 0,
+      listening: true,
     });
     const labelText = new Konva.Text({
       id: connect.id + '-label-text',
-      text: connect.from + ' → ' + connect.to,
+      text: connect.from + ' to ' + connect.to,
       fontSize: 12,
       fontFamily: 'Arial',
       fill: COLORS.label,
       align: 'center',
+      listening: true,
     });
     const textWidth = labelText.width();
     const textHeight = labelText.height();
@@ -211,6 +214,39 @@ function getConnectorPoints(from, to) {
     const rect = label.getClientRect({ relativeTo: layer });
     label.offsetX(rect.width / 2);
     label.offsetY(rect.height / 2);
+
+    const handleMiddleClick = (event) => {
+      if (event.evt.button !== 1) {
+        return;
+      }
+      event.evt.preventDefault();
+      removeConnector(connect.id);
+    };
+
+    labelBg.on('mousedown', handleMiddleClick);
+    labelText.on('mousedown', handleMiddleClick);
+  }
+
+  function removeConnector(connectorId, skipUpdate = false) {
+    const index = connectors.findIndex(
+      (connector) => connector.id === connectorId
+    );
+    if (index === -1) {
+      return;
+    }
+    connectors.splice(index, 1);
+    const line = layer.findOne('#' + connectorId);
+    const label = layer.findOne('#' + connectorId + '-label');
+    if (line) {
+      line.destroy();
+    }
+    if (label) {
+      label.destroy();
+    }
+    if (!skipUpdate) {
+      updateObjects();
+      layer.batchDraw();
+    }
   }
 
   function connectorExists(fromId, toId) {
@@ -227,10 +263,11 @@ function getConnectorPoints(from, to) {
       return;
     }
     const connect = {
-      id: 'connector-' + connectors.length,
+      id: 'connector-' + nextConnectorId,
       from: fromId,
       to: toId,
     };
+    nextConnectorId += 1;
     connectors.push(connect);
     createConnector(connect);
     updateObjects();
@@ -241,8 +278,46 @@ function getConnectorPoints(from, to) {
     createConnector(connect);
   });
 
+  function removeTarget(targetId) {
+    if (targets.length <= 1) {
+      return;
+    }
+    const index = targets.findIndex((target) => target.id === targetId);
+    if (index === -1) {
+      return;
+    }
+
+    if (pendingConnectorFrom === targetId) {
+      pendingConnectorFrom = null;
+      tempConnector.visible(false);
+    }
+
+    targets.splice(index, 1);
+    const node = layer.findOne('#' + targetId);
+    const label = layer.findOne('#' + targetId + '-label');
+    if (node) {
+      node.destroy();
+    }
+    if (label) {
+      label.destroy();
+    }
+
+    const related = connectors.filter(
+      (connector) => connector.from === targetId || connector.to === targetId
+    );
+    related.forEach((connector) => {
+      removeConnector(connector.id, true);
+    });
+
+    if (activeTargetId === targetId) {
+      activeTargetId = targets.length ? targets[0].id : null;
+    }
+    updateObjects();
+    layer.batchDraw();
+  }
+
   function createTarget(target) {
-    const isHighlighted = target.id === 'target-4';
+    const isHighlighted = target.id === activeTargetId;
     const node = new Konva.Circle({
       id: target.id,
       fill: COLORS.nodeFill,
@@ -275,6 +350,11 @@ function getConnectorPoints(from, to) {
     });
 
     node.on('mousedown', (event) => {
+      if (event.evt.button === 1) {
+        event.evt.preventDefault();
+        removeTarget(target.id);
+        return;
+      }
       if (event.evt.button !== 0) {
         return;
       }
@@ -287,6 +367,7 @@ function getConnectorPoints(from, to) {
       tempConnector.visible(false);
       addConnector(fromId, target.id);
     });
+
 
     node.on('dragstart', () => {
       node.moveToTop();
@@ -306,10 +387,11 @@ function getConnectorPoints(from, to) {
 
   function addTargetAt(x, y) {
     const target = {
-      id: 'target-' + targets.length,
+      id: 'target-' + nextTargetId,
       x,
       y,
     };
+    nextTargetId += 1;
     targets.push(target);
     createTarget(target);
     updateObjects();
@@ -336,6 +418,21 @@ function getConnectorPoints(from, to) {
     const x = (pointer.x - stage.x()) / scale;
     const y = (pointer.y - stage.y()) / scale;
     addTargetAt(x, y);
+  });
+
+  stage.on('mousedown', (e) => {
+    if (e.target !== stage) {
+      return;
+    }
+    if (e.evt.button !== 0) {
+      return;
+    }
+    if (!pendingConnectorFrom) {
+      return;
+    }
+    pendingConnectorFrom = null;
+    tempConnector.visible(false);
+    layer.batchDraw();
   });
 
   stage.on('mousemove', () => {
