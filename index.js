@@ -38,6 +38,143 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeTargetId = targets[0].id;
   let activeLabelEditor = null;
 
+  function printStateAsJson() {
+    const state = {
+      targets: targets.map((target) => ({ ...target })),
+      connectors: connectors.map((connector) => ({ ...connector })),
+    };
+    const json = JSON.stringify(state, null, 2);
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(json)
+        .then(() => {
+          console.log('State JSON copied to clipboard.');
+        })
+        .catch(() => {
+          console.log(json);
+        });
+    } else {
+      console.log(json);
+    }
+  }
+
+  function clearCurrentState() {
+    targets.forEach((target) => {
+      const node = layer.findOne('#' + target.id);
+      const label = layer.findOne('#' + target.id + '-label');
+      if (node) {
+        node.destroy();
+      }
+      if (label) {
+        label.destroy();
+      }
+    });
+    connectors.forEach((connect) => {
+      const line = layer.findOne('#' + connect.id);
+      const label = layer.findOne('#' + connect.id + '-label');
+      if (line) {
+        line.destroy();
+      }
+      if (label) {
+        label.destroy();
+      }
+    });
+    targets.length = 0;
+    connectors.length = 0;
+    pendingConnectorFrom = null;
+    tempConnector.visible(false);
+  }
+
+  function rebuildStateFromJson(state) {
+    const incomingTargets = Array.isArray(state.targets) ? state.targets : [];
+    const incomingConnectors = Array.isArray(state.connectors)
+      ? state.connectors
+      : [];
+
+    clearCurrentState();
+
+    incomingTargets.forEach((target) => {
+      if (!target || !target.id || typeof target.x !== 'number' || typeof target.y !== 'number') {
+        return;
+      }
+      const safeTarget = {
+        id: String(target.id),
+        label: typeof target.label === 'string' ? target.label : String(target.id),
+        x: target.x,
+        y: target.y,
+      };
+      targets.push(safeTarget);
+      createTarget(safeTarget);
+    });
+
+    incomingConnectors.forEach((connector) => {
+      if (!connector || !connector.id || !connector.from || !connector.to) {
+        return;
+      }
+      const safeConnector = {
+        id: String(connector.id),
+        from: String(connector.from),
+        to: String(connector.to),
+      };
+      connectors.push(safeConnector);
+      createConnector(safeConnector);
+    });
+
+    nextTargetId = targets.length
+      ? Math.max(...targets.map((t) => parseInt(String(t.id).split('-').pop(), 10) || 0)) + 1
+      : 0;
+    nextConnectorId = connectors.length
+      ? Math.max(...connectors.map((c) => parseInt(String(c.id).split('-').pop(), 10) || 0)) + 1
+      : 0;
+
+    activeTargetId = targets.length ? targets[0].id : null;
+    updateObjects();
+    layer.batchDraw();
+  }
+
+  function importStateFromClipboard() {
+    if (!navigator || !navigator.clipboard || !navigator.clipboard.readText) {
+      console.log('Clipboard API not available.');
+      return;
+    }
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (error) {
+          console.log('Invalid JSON in clipboard.');
+          return;
+        }
+        if (!parsed || typeof parsed !== 'object') {
+          console.log('Clipboard JSON is not an object.');
+          return;
+        }
+        rebuildStateFromJson(parsed);
+        console.log('State JSON imported from clipboard.');
+      })
+      .catch(() => {
+        console.log('Failed to read clipboard.');
+      });
+  }
+
+  const copyStateButton = document.getElementById('copy-state');
+  if (copyStateButton) {
+    copyStateButton.addEventListener('click', () => {
+      printStateAsJson();
+    });
+  }
+
+  const importStateButton = document.getElementById('import-state');
+  if (importStateButton) {
+    importStateButton.addEventListener('click', () => {
+      importStateFromClipboard();
+    });
+  }
+
+  
+
   function getTargetLabelById(targetId) {
     const target = targets.find((item) => item.id === targetId);
     return target ? target.label || target.id : targetId;
@@ -353,6 +490,7 @@ function getConnectorPoints(from, to) {
     createConnector(connect);
     updateObjects();
     layer.batchDraw();
+   
   }
 
   connectors.forEach((connect) => {
@@ -395,6 +533,7 @@ function getConnectorPoints(from, to) {
     }
     updateObjects();
     layer.batchDraw();
+   
   }
 
   function createTarget(target) {
@@ -471,6 +610,8 @@ function getConnectorPoints(from, to) {
       updateObjects();
     });
 
+   
+
     node.on('dblclick', (event) => {
       event.cancelBubble = true;
       startEditingTargetLabel(target, label);
@@ -489,6 +630,7 @@ function getConnectorPoints(from, to) {
     createTarget(target);
     updateObjects();
     layer.batchDraw();
+   
   }
 
   targets.forEach((target) => {

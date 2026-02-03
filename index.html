@@ -55,13 +55,20 @@
         </main>
 
         <footer>
-            Double Click to create state, Right-Click on state to start a transition and Left-Click on another target to finish. Middle-Click deletes transition and states, Double-Click state let's you edit the state name.
-
-            Right-Click and Drag on empty space to pan, Scroll to zoom in and out.
-        
-            Alt + Left-Click on state to set it as active state.
-
-       
+            <div>
+                Double Click to create state, Right-Click on state to start a transition and Left-Click on another target to finish. Middle-Click deletes transition and states, Double-Click state let's you edit the state name.
+            </div>
+            <div>
+                Right-Click and Drag on empty space to pan, Scroll to zoom in and out.
+            </div>
+            <div>
+                Alt + Left-Click on state to set it as active state.
+            </div>
+            <div style="margin-top: 12px;">
+                <button id="copy-state" type="button">Copy state JSON</button>
+                <button id="import-state" type="button" style="margin-left: 8px;">Import JSON from clipboard</button>
+            </div>
+        </footer>
 
         <script src="index.js" type="module"></script>
     </body>
