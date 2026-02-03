@@ -76,6 +76,17 @@ function getConnectorPoints(from, to) {
 }
 
   const connectors = generateConnectors();
+  let pendingConnectorFrom = null;
+  const tempConnector = new Konva.Arrow({
+    stroke: COLORS.connectorCyan,
+    fill: COLORS.connectorCyan,
+    pointerLength: 8,
+    pointerWidth: 8,
+    dash: [6, 4],
+    listening: false,
+    visible: false,
+  });
+  layer.add(tempConnector);
 
 // update all objects on the canvas from the state of the app
   function updateObjects() {
@@ -91,6 +102,9 @@ function getConnectorPoints(from, to) {
     });
     connectors.forEach((connect) => {
       const line = layer.findOne('#' + connect.id);
+      const label = layer.findOne('#' + connect.id + '-label');
+      const labelText = layer.findOne('#' + connect.id + '-label-text');
+      const labelBg = layer.findOne('#' + connect.id + '-label-bg');
       const fromNode = layer.findOne('#' + connect.from);
       const toNode = layer.findOne('#' + connect.to);
 
@@ -99,11 +113,61 @@ function getConnectorPoints(from, to) {
         toNode.position()
       );
       line.points(points);
+      if (label && labelText && labelBg) {
+        const midX = (points[0] + points[2]) / 2;
+        const midY = (points[1] + points[3]) / 2;
+        label.position({ x: midX, y: midY });
+        const textWidth = labelText.width();
+        const textHeight = labelText.height();
+        const bgWidth = textWidth * 1.5;
+        const bgHeight = textHeight * 2;
+        labelBg.size({
+          width: bgWidth,
+          height: bgHeight,
+        });
+        labelText.position({
+          x: (bgWidth - textWidth) / 2,
+          y: (bgHeight - textHeight) / 2,
+        });
+        const rect = label.getClientRect({ relativeTo: layer });
+        label.offsetX(rect.width / 2);
+        label.offsetY(rect.height / 2);
+      }
     });
   }
 
+  function getStagePointFromPointer(pointer) {
+    const scale = stage.scaleX();
+    return {
+      x: (pointer.x - stage.x()) / scale,
+      y: (pointer.y - stage.y()) / scale,
+    };
+  }
+
+  function updateTempConnector(pointer) {
+    if (!pendingConnectorFrom || !pointer) {
+      return;
+    }
+    const shape = stage.getIntersection(pointer);
+    if (shape && shape.id && shape.id() === pendingConnectorFrom) {
+      tempConnector.visible(false);
+      layer.batchDraw();
+      return;
+    }
+    const fromNode = layer.findOne('#' + pendingConnectorFrom);
+    if (!fromNode) {
+      return;
+    }
+    const stagePoint = getStagePointFromPointer(pointer);
+    const points = getConnectorPoints(fromNode.position(), stagePoint);
+    tempConnector.points(points);
+    tempConnector.visible(true);
+    tempConnector.moveToTop();
+    layer.batchDraw();
+  }
+
 // generate nodes for the app
-  connectors.forEach((connect) => {
+  function createConnector(connect) {
     const line = new Konva.Arrow({
       stroke: COLORS.connectorCyan,
       id: connect.id,
@@ -112,9 +176,72 @@ function getConnectorPoints(from, to) {
       pointerWidth: 8,
     });
     layer.add(line);
+
+    const label = new Konva.Group({
+      id: connect.id + '-label',
+      listening: false,
+    });
+    const labelBg = new Konva.Rect({
+      id: connect.id + '-label-bg',
+      fill: 'rgba(0, 120, 255, 0.75)',
+      cornerRadius: 2,
+      width: 0,
+      height: 0,
+    });
+    const labelText = new Konva.Text({
+      id: connect.id + '-label-text',
+      text: connect.from + ' → ' + connect.to,
+      fontSize: 12,
+      fontFamily: 'Arial',
+      fill: COLORS.label,
+      align: 'center',
+    });
+    const textWidth = labelText.width();
+    const textHeight = labelText.height();
+    const bgWidth = textWidth * 1.5;
+    const bgHeight = textHeight * 2;
+    labelBg.size({ width: bgWidth, height: bgHeight });
+    labelText.position({
+      x: (bgWidth - textWidth) / 2,
+      y: (bgHeight - textHeight) / 2,
+    });
+    label.add(labelBg);
+    label.add(labelText);
+    layer.add(label);
+    const rect = label.getClientRect({ relativeTo: layer });
+    label.offsetX(rect.width / 2);
+    label.offsetY(rect.height / 2);
+  }
+
+  function connectorExists(fromId, toId) {
+    return connectors.some(
+      (connector) => connector.from === fromId && connector.to === toId
+    );
+  }
+
+  function addConnector(fromId, toId) {
+    if (fromId === toId) {
+      return;
+    }
+    if (connectorExists(fromId, toId)) {
+      return;
+    }
+    const connect = {
+      id: 'connector-' + connectors.length,
+      from: fromId,
+      to: toId,
+    };
+    connectors.push(connect);
+    createConnector(connect);
+    updateObjects();
+    layer.batchDraw();
+  }
+
+  connectors.forEach((connect) => {
+    createConnector(connect);
   });
 
-  targets.forEach((target) => {
+  function createTarget(target) {
     const isHighlighted = target.id === 'target-4';
     const node = new Konva.Circle({
       id: target.id,
@@ -141,6 +268,26 @@ function getConnectorPoints(from, to) {
     label.offsetY(label.height() / 2);
     layer.add(label);
 
+    node.on('contextmenu', (event) => {
+      event.evt.preventDefault();
+      pendingConnectorFrom = target.id;
+      updateTempConnector(stage.getPointerPosition());
+    });
+
+    node.on('mousedown', (event) => {
+      if (event.evt.button !== 0) {
+        return;
+      }
+      if (!pendingConnectorFrom) {
+        return;
+      }
+
+      const fromId = pendingConnectorFrom;
+      pendingConnectorFrom = null;
+      tempConnector.visible(false);
+      addConnector(fromId, target.id);
+    });
+
     node.on('dragstart', () => {
       node.moveToTop();
       label.moveToTop();
@@ -155,11 +302,50 @@ function getConnectorPoints(from, to) {
       // update nodes from the new state
       updateObjects();
     });
+  }
+
+  function addTargetAt(x, y) {
+    const target = {
+      id: 'target-' + targets.length,
+      x,
+      y,
+    };
+    targets.push(target);
+    createTarget(target);
+    updateObjects();
+    layer.batchDraw();
+  }
+
+  targets.forEach((target) => {
+    createTarget(target);
   });
 
   updateObjects();
 
-  const scaleBy = 1.01;
+  stage.on('dblclick', (e) => {
+    if (e.target !== stage) {
+      return;
+    }
+
+    const pointer = stage.getPointerPosition();
+    if (!pointer) {
+      return;
+    }
+
+    const scale = stage.scaleX();
+    const x = (pointer.x - stage.x()) / scale;
+    const y = (pointer.y - stage.y()) / scale;
+    addTargetAt(x, y);
+  });
+
+  stage.on('mousemove', () => {
+    if (!pendingConnectorFrom) {
+      return;
+    }
+    updateTempConnector(stage.getPointerPosition());
+  });
+
+  const scaleBy = 1.05;
   stage.on('wheel', (e) => {
     // stop default scrolling
     e.evt.preventDefault();
@@ -205,6 +391,11 @@ function getConnectorPoints(from, to) {
 
   container.addEventListener('mousedown', (e) => {
     if (e.button !== 2) {
+      return;
+    }
+    const pointer = stage.getPointerPosition();
+    const shape = pointer ? stage.getIntersection(pointer) : null;
+    if (shape && shape instanceof Konva.Circle) {
       return;
     }
     e.preventDefault();
