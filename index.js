@@ -29,12 +29,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const targets = [
     {
       id: 'target-' + nextTargetId,
+      label: 'target-' + nextTargetId,
       x: stage.width() / 2,
       y: stage.height() / 2,
     },
   ];
   nextTargetId += 1;
   let activeTargetId = targets[0].id;
+  let activeLabelEditor = null;
+
+  function getTargetLabelById(targetId) {
+    const target = targets.find((item) => item.id === targetId);
+    return target ? target.label || target.id : targetId;
+  }
 
 
 function getConnectorPoints(from, to) {
@@ -80,6 +87,7 @@ function getConnectorPoints(from, to) {
       node.x(target.x);
       node.y(target.y);
       if (label) {
+        label.text(target.label || target.id);
         label.x(target.x);
         label.y(target.y);
         label.offsetX(label.width() / 2);
@@ -104,6 +112,9 @@ function getConnectorPoints(from, to) {
       );
       line.points(points);
       if (label && labelText && labelBg) {
+        labelText.text(
+          `${getTargetLabelById(connect.from)} to ${getTargetLabelById(connect.to)}`
+        );
         const midX = (points[0] + points[2]) / 2;
         const midY = (points[1] + points[3]) / 2;
         label.position({ x: midX, y: midY });
@@ -167,6 +178,76 @@ function getConnectorPoints(from, to) {
     layer.batchDraw();
   }
 
+  function startEditingTargetLabel(target, label) {
+    if (activeLabelEditor) {
+      activeLabelEditor.remove();
+      activeLabelEditor = null;
+    }
+
+    const stageBox = stage.container().getBoundingClientRect();
+    const labelPosition = label.getAbsolutePosition();
+    const inputWidth = Math.max(label.width(), 100);
+    const inputHeight = label.height();
+    const areaPosition = {
+      x: stageBox.left + labelPosition.x - inputWidth / 2,
+      y: stageBox.top + labelPosition.y - inputHeight / 2,
+    };
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = target.label || label.text();
+    input.style.position = 'absolute';
+    input.style.top = `${areaPosition.y}px`;
+    input.style.left = `${areaPosition.x}px`;
+    input.style.width = `${inputWidth}px`;
+    input.style.height = `${inputHeight}px`;
+    input.style.fontSize = `${label.fontSize()}px`;
+    input.style.fontFamily = label.fontFamily();
+    input.style.color = label.fill();
+    input.style.background = 'rgba(0,0,0,0.6)';
+    input.style.border = '1px solid #4aa3ff';
+    input.style.padding = '10px';
+    input.style.margin = '0';
+    input.style.textAlign = 'center';
+    input.style.outline = 'none';
+    input.style.boxSizing = 'border-box';
+
+    document.body.appendChild(input);
+    input.focus();
+    input.select();
+    activeLabelEditor = input;
+
+    const cleanup = () => {
+      if (activeLabelEditor) {
+        activeLabelEditor.remove();
+        activeLabelEditor = null;
+      }
+    };
+
+    const commit = () => {
+      const newText = input.value.trim();
+      target.label = newText ? newText : target.label;
+      label.text(target.label || target.id);
+      cleanup();
+      updateObjects();
+      layer.batchDraw();
+    };
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        commit();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        cleanup();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      commit();
+    });
+  }
+
 // generate nodes for the app
   function createConnector(connect) {
     const line = new Konva.Arrow({
@@ -192,7 +273,7 @@ function getConnectorPoints(from, to) {
     });
     const labelText = new Konva.Text({
       id: connect.id + '-label-text',
-      text: connect.from + ' to ' + connect.to,
+      text: `${getTargetLabelById(connect.from)} to ${getTargetLabelById(connect.to)}`,
       fontSize: 12,
       fontFamily: 'Arial',
       fill: COLORS.label,
@@ -332,7 +413,7 @@ function getConnectorPoints(from, to) {
 
     const label = new Konva.Text({
       id: target.id + '-label',
-      text: target.id,
+      text: target.label || target.id,
       fontSize: 14,
       fontFamily: 'Arial',
       fill: COLORS.label,
@@ -383,11 +464,17 @@ function getConnectorPoints(from, to) {
       // update nodes from the new state
       updateObjects();
     });
+
+    node.on('dblclick', (event) => {
+      event.cancelBubble = true;
+      startEditingTargetLabel(target, label);
+    });
   }
 
   function addTargetAt(x, y) {
     const target = {
       id: 'target-' + nextTargetId,
+      label: 'target-' + nextTargetId,
       x,
       y,
     };
