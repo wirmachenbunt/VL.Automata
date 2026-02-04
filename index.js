@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const automataChannelName = 'automata';
   const automataTopicName = 'automata';
+  const broadcastChannelName = 'broadcast';
 
   (async () => {
     for await (const _event of socket.listener('connect')) {
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('SocketCluster connection error.', event?.error || event);
     }
   })();
+
 
   const socketToggle = document.getElementById('socket-toggle');
   if (socketToggle) {
@@ -90,6 +92,34 @@ document.addEventListener('DOMContentLoaded', () => {
   nextStateId += 1;
   let activeStateId = states[0].id;
   let activeLabelEditor = null;
+
+  function trySetActiveStateFromPayload(payload) {
+    if (!payload || typeof payload !== 'object') {
+      return false;
+    }
+
+    let candidate = payload;
+    if (payload.state && typeof payload.state === 'object') {
+      candidate = payload.state;
+    } else if (payload.data && typeof payload.data === 'object') {
+      candidate = payload.data;
+    }
+
+    const stateId = candidate.id || candidate.stateId;
+    if (!stateId) {
+      return false;
+    }
+
+    const exists = states.some((state) => state.id === stateId);
+    if (!exists) {
+      return false;
+    }
+
+    activeStateId = stateId;
+    updateObjects();
+    layer.batchDraw();
+    return true;
+  }
 
   function getStateSnapshot() {
     return {
@@ -377,6 +407,20 @@ function getTransitionPoints(from, to) {
       }
     });
   }
+
+  (async () => {
+    const broadcastChannel = socket.subscribe(broadcastChannelName);
+    for await (const data of broadcastChannel) {
+      if (data && typeof data === 'object') {
+        console.log('SocketCluster received object:', data);
+        if (trySetActiveStateFromPayload(data)) {
+          console.log('Active state updated from SocketCluster.');
+        }
+      } else {
+        console.log('SocketCluster received message:', data);
+      }
+    }
+  })();
 
   function getStagePointFromPointer(pointer) {
     const scale = stage.scaleX();
