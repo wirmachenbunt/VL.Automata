@@ -1,0 +1,40 @@
+{
+    "id": "3c419618-4ef2-4a15-8a94-369f4c17fe07",
+    "created": 1775817858349,
+    "license": "MIT",
+    "authorName": "wirmachenbunt",
+    "layout": {
+        "portsIn": [
+            {
+                "type": 1,
+                "name": "Trigger"
+            },
+            {
+                "type": 0,
+                "name": "Number",
+                "subType": "number"
+            },
+            {
+                "type": 1,
+                "name": "Show Tab"
+            }
+        ],
+        "portsOut": [
+            {
+                "type": 1,
+                "name": "Next"
+            },
+            {
+                "type": 0,
+                "name": "Result",
+                "subType": "number"
+            }
+        ]
+    },
+    "dependencies": [
+        {
+            "src": "konva",
+            "type": "npm"
+        }
+    ]
+}
