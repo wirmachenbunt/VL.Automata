@@ -4,61 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  if (!window.socketClusterClient) {
-    console.error('SocketCluster client not loaded. Check the CDN script tag.');
-    return;
-  }
-
-  const socketHostname = '127.0.0.1';
-  const socketPort = 8000;
-  const socketSecure = false;
-  const socketAddress = `${socketSecure ? 'wss' : 'ws'}://${socketHostname}:${socketPort}`;
-
-  const socket = socketClusterClient.create({
-    hostname: socketHostname,
-    port: socketPort,
-    secure: socketSecure,
-    autoConnect: false,
-    autoReconnect: false,
-  });
-
-  const automataChannelName = 'automata';
-  const automataTopicName = 'automata';
-  const broadcastChannelName = 'broadcast';
-
-  (async () => {
-    for await (const _event of socket.listener('connect')) {
-      console.log('SocketCluster connected.');
-    }
-  })();
-
-  (async () => {
-    for await (const _event of socket.listener('disconnect')) {
-      console.log('SocketCluster disconnected.');
-    }
-  })();
-
-  (async () => {
-    for await (const event of socket.listener('error')) {
-      console.log('SocketCluster connection error.', event?.error || event);
-    }
-  })();
-
-
-  const socketToggle = document.getElementById('socket-toggle');
-  if (socketToggle) {
-    socketToggle.checked = false;
-    socketToggle.addEventListener('change', () => {
-      if (socketToggle.checked) {
-        socket.options.autoReconnect = true;
-        socket.connect();
-      } else {
-        socket.options.autoReconnect = false;
-        socket.disconnect(1000, 'Socket disabled');
-      }
-    });
-  }
-
   const width = window.innerWidth;
   const height = window.innerHeight;
 
@@ -93,34 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeStateId = states[0].id;
   let activeLabelEditor = null;
 
-  function trySetActiveStateFromPayload(payload) {
-    if (!payload || typeof payload !== 'object') {
-      return false;
-    }
-
-    let candidate = payload;
-    if (payload.state && typeof payload.state === 'object') {
-      candidate = payload.state;
-    } else if (payload.data && typeof payload.data === 'object') {
-      candidate = payload.data;
-    }
-
-    const stateId = candidate.id || candidate.stateId;
-    if (!stateId) {
-      return false;
-    }
-
-    const exists = states.some((state) => state.id === stateId);
-    if (!exists) {
-      return false;
-    }
-
-    activeStateId = stateId;
-    updateObjects();
-    layer.batchDraw();
-    return true;
-  }
-
   function getStateSnapshot() {
     return {
       states: states.map((state) => ({ ...state })),
@@ -128,21 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function publishStateSnapshot() {
-    const snapshot = getStateSnapshot();
-    const snapshotJson = JSON.stringify(snapshot, null, 2);
-    try {
-      if (socket.state !== socket.OPEN) {
-        return;
-      }
-      socket.transmitPublish(automataChannelName, snapshotJson);
-      console.log(
-        `Published automata snapshot to ${socketAddress} | channel: ${automataChannelName} | topic: ${automataTopicName}`
-      );
-    } catch (error) {
-      console.log('Failed to publish automata state.', error);
-    }
-  }
+
 
   function printStateAsJson() {
     const snapshot = getStateSnapshot();
@@ -239,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     activeStateId = states.length ? states[0].id : null;
     updateObjects();
     layer.batchDraw();
-    publishStateSnapshot();
   }
 
   function importStateFromClipboard() {
@@ -408,20 +310,6 @@ function getTransitionPoints(from, to) {
     });
   }
 
-  (async () => {
-    const broadcastChannel = socket.subscribe(broadcastChannelName);
-    for await (const data of broadcastChannel) {
-      if (data && typeof data === 'object') {
-        console.log('SocketCluster received object:', data);
-        if (trySetActiveStateFromPayload(data)) {
-          console.log('Active state updated from SocketCluster.');
-        }
-      } else {
-        console.log('SocketCluster received message:', data);
-      }
-    }
-  })();
-
   function getStagePointFromPointer(pointer) {
     const scale = stage.scaleX();
     return {
@@ -505,7 +393,6 @@ function getTransitionPoints(from, to) {
       cleanup();
       updateObjects();
       layer.batchDraw();
-      publishStateSnapshot();
     };
 
     input.addEventListener('keydown', (event) => {
@@ -607,7 +494,6 @@ function getTransitionPoints(from, to) {
     if (!skipUpdate) {
       updateObjects();
       layer.batchDraw();
-      publishStateSnapshot();
     }
   }
 
@@ -634,8 +520,6 @@ function getTransitionPoints(from, to) {
     createTransition(transition);
     updateObjects();
     layer.batchDraw();
-    publishStateSnapshot();
-   
   }
 
   transitions.forEach((transition) => {
@@ -678,8 +562,6 @@ function getTransitionPoints(from, to) {
     }
     updateObjects();
     layer.batchDraw();
-    publishStateSnapshot();
-   
   }
 
   function createState(state) {
@@ -761,9 +643,7 @@ function getTransitionPoints(from, to) {
       updateObjects();
     });
 
-    node.on('dragend', () => {
-      publishStateSnapshot();
-    });
+
 
    
 
@@ -785,8 +665,6 @@ function getTransitionPoints(from, to) {
     createState(state);
     updateObjects();
     layer.batchDraw();
-    publishStateSnapshot();
-   
   }
 
   states.forEach((state) => {
