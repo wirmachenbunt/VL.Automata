@@ -11,7 +11,8 @@ const
     next = op.outTrigger("Next"),
     inShow = op.inTriggerButton("Show Tab"),
     inStoreData = op.inString("Stored Automata Data", ""),
-    result = op.outNumber("Result");
+    result = op.outNumber("Result"),
+    outActiveState = op.outString("Active State");
 
 inStoreData.setUiAttribs({ "hidePort": true, "greyout": true });
 
@@ -75,6 +76,12 @@ if(CABLES.UI)
         const transitions = [];
         let nextTransitionId = 0;
         let activeStateId = null;
+
+        function updateActiveStateOutput()
+        {
+            const s = states.find((item) => item.id === activeStateId);
+            outActiveState.set(s ? (s.label || s.id) : "");
+        }
         let activeLabelEditor = null;
 
         // Load saved data or create default start state
@@ -121,6 +128,7 @@ if(CABLES.UI)
                 ? Math.max(...transitions.map((t) => parseInt(String(t.id).split("-").pop(), 10) || 0)) + 1
                 : 0;
             activeStateId = states.length ? states[0].id : null;
+            updateActiveStateOutput();
         }
         else
         {
@@ -132,6 +140,7 @@ if(CABLES.UI)
             });
             nextStateId += 1;
             activeStateId = states[0].id;
+            updateActiveStateOutput();
         }
 
         function saveState()
@@ -238,6 +247,7 @@ if(CABLES.UI)
                 : 0;
 
             activeStateId = states.length ? states[0].id : null;
+            updateActiveStateOutput();
             updateObjects();
             layer.batchDraw();
             saveState();
@@ -476,6 +486,7 @@ if(CABLES.UI)
                 state.label = newText ? newText : state.label;
                 label.text(state.label || state.id);
                 cleanup();
+                updateActiveStateOutput();
                 updateObjects();
                 layer.batchDraw();
                 saveState();
@@ -626,6 +637,7 @@ if(CABLES.UI)
             if (activeStateId === stateId)
             {
                 activeStateId = states.length ? states[0].id : null;
+                updateActiveStateOutput();
             }
             updateObjects();
             layer.batchDraw();
@@ -725,9 +737,10 @@ if(CABLES.UI)
             if (e.evt.button === 0)
             {
                 // Alt+click on state: set active
-                if (shape && shape.id && shape.id().startsWith("state-") && e.evt.altKey)
+                if (shape && shape.id && shape.id().startsWith("state-") && e.evt.ctrlKey)
                 {
                     activeStateId = shape.id();
+                    updateActiveStateOutput();
                     updateObjects();
                     layer.batchDraw();
                     saveState();
@@ -876,9 +889,16 @@ if(CABLES.UI)
         container.addEventListener("contextmenu", (e) => { e.preventDefault(); });
 
         // Stop cables UI from intercepting mouse events (bubble phase)
+        // Leave a safety margin on the right edge so the tab resize handle still works
+        const RESIZE_SAFETY_MARGIN = 32;
         ["mousedown", "mousemove", "mouseup", "pointerdown", "pointermove", "pointerup"].forEach((evtName) =>
         {
-            container.addEventListener(evtName, (e) => { e.stopPropagation(); });
+            container.addEventListener(evtName, (e) =>
+            {
+                const rect = container.getBoundingClientRect();
+                if (e.clientX >= rect.right - RESIZE_SAFETY_MARGIN) return;
+                e.stopPropagation();
+            });
         });
 
         container.addEventListener("mouseleave", () =>
@@ -887,6 +907,17 @@ if(CABLES.UI)
             canvasDrag = false;
             canvasDragStart = null;
         });
+
+        // Resize the Konva stage when the tab/container is resized
+        const resizeObserver = new ResizeObserver(() =>
+        {
+            const newWidth = container.offsetWidth || 800;
+            const newHeight = container.offsetHeight || 600;
+            stage.width(newWidth);
+            stage.height(newHeight);
+            stage.batchDraw();
+        });
+        resizeObserver.observe(container);
     });
 }
 

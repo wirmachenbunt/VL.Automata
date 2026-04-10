@@ -6,7 +6,7 @@
     "userId": "69d8c180e75b5189e6e8b7b3",
     "cachedUsername": "wirmachenbunt",
     "created": 1775812992815,
-    "updated": 1775836177019,
+    "updated": 1775839342624,
     "visibility": "private",
     "ops": [
         {
@@ -15,8 +15,8 @@
             "attribs": {},
             "uiAttribs": {
                 "translate": {
-                    "x": -2224.48766253995,
-                    "y": -1431.3219945426304
+                    "x": -2690.616694798015,
+                    "y": -1557.1284461555338
                 }
             },
             "portsIn": [
@@ -80,8 +80,8 @@
                 "resizableY": false,
                 "stretchPorts": true,
                 "translate": {
-                    "x": -2224.48766253995,
-                    "y": -1372.0637906990598
+                    "x": -2690.616694798015,
+                    "y": -1497.8702423119632
                 }
             },
             "portsOut": [
@@ -91,7 +91,7 @@
                         {
                             "portIn": "Trigger",
                             "portOut": "trigger 0",
-                            "objIn": "qkgon0p6l",
+                            "objIn": "1vxgn27e5",
                             "objOut": "zx6g2h4f9"
                         }
                     ]
@@ -102,7 +102,7 @@
                         {
                             "portIn": "Trigger",
                             "portOut": "trigger 1",
-                            "objIn": "pge095afo",
+                            "objIn": "pyx82qkzn",
                             "objOut": "zx6g2h4f9"
                         }
                     ]
@@ -110,40 +110,62 @@
             ]
         },
         {
-            "opId": "3c419618-4ef2-4a15-8a94-369f4c17fe07",
-            "id": "qkgon0p6l",
+            "opId": "b4c93fde-85c6-4c7e-9962-a6463a84838b",
+            "id": "sxdlb66nh",
             "attribs": {},
             "uiAttribs": {
+                "height": 200,
+                "width": 400,
+                "resizable": true,
+                "vizLayerMaxZoom": 3500,
                 "translate": {
-                    "x": -2413.4844179427455,
-                    "y": -1229.1942001113268
+                    "x": -2601.071677010805,
+                    "y": -1230.8599791286897
                 }
             },
             "portsIn": [
                 {
-                    "name": "Number",
+                    "name": "ZoomText",
                     "value": 0
                 },
                 {
-                    "name": "Stored Automata Data",
-                    "value": "{\"states\":[{\"id\":\"state-0\",\"label\":\"START\",\"x\":284,\"y\":517.5},{\"id\":\"state-1\",\"label\":\"main\",\"x\":213,\"y\":159.3333282470703},{\"id\":\"state-2\",\"label\":\"state-2\",\"x\":585.6424999999999,\"y\":268.3858282470703}],\"transitions\":[{\"id\":\"transition-0\",\"from\":\"state-0\",\"to\":\"state-1\"},{\"id\":\"transition-1\",\"from\":\"state-0\",\"to\":\"state-2\"},{\"id\":\"transition-2\",\"from\":\"state-2\",\"to\":\"state-1\"}]}"
-                }
-            ],
-            "portsOut": [
+                    "name": "Line Numbers",
+                    "value": 0
+                },
                 {
-                    "name": "Result",
+                    "name": "Whitespace",
+                    "value": 0
+                },
+                {
+                    "name": "Wrap lines",
+                    "value": 1
+                },
+                {
+                    "name": "Syntax index",
+                    "value": 0
+                },
+                {
+                    "name": "Syntax",
+                    "value": "text"
+                },
+                {
+                    "name": "Font Size",
+                    "value": 10
+                },
+                {
+                    "name": "Scroll",
                     "value": 0
                 }
             ]
         },
         {
             "opId": "3c419618-4ef2-4a15-8a94-369f4c17fe07",
-            "id": "pge095afo",
+            "id": "1vxgn27e5",
             "attribs": {},
             "uiAttribs": {
                 "translate": {
-                    "x": -2090.7664081396906,
-                    "y": -1278.616210865436
+                    "x": -2832,
+                    "y": -1400
                 }
             },
             "portsIn": [
@@ -153,13 +175,55 @@
                 },
                 {
                     "name": "Stored Automata Data",
-                    "value": "{\"states\":[{\"id\":\"state-0\",\"label\":\"START\",\"x\":166.28574564709047,\"y\":-182.93891720292967},{\"id\":\"state-1\",\"label\":\"Main\",\"x\":-15.007315516316872,\"y\":-12.304525969833279},{\"id\":\"state-2\",\"label\":\"Sunmenu\",\"x\":336.3934026974358,\"y\":10.276685952964437}],\"transitions\":[{\"id\":\"transition-0\",\"from\":\"state-0\",\"to\":\"state-1\"},{\"id\":\"transition-1\",\"from\":\"state-1\",\"to\":\"state-2\"},{\"id\":\"transition-2\",\"from\":\"state-0\",\"to\":\"state-2\"}]}"
+                    "value": "{\"states\":[{\"id\":\"state-0\",\"label\":\"START\",\"x\":242.5,\"y\":562},{\"id\":\"state-1\",\"label\":\"Main\",\"x\":144,\"y\":262.3333282470703},{\"id\":\"state-2\",\"label\":\"Gallery\",\"x\":491,\"y\":364.3333282470703}],\"transitions\":[{\"id\":\"transition-0\",\"from\":\"state-0\",\"to\":\"state-1\"},{\"id\":\"transition-1\",\"from\":\"state-0\",\"to\":\"state-2\"},{\"id\":\"transition-2\",\"from\":\"state-1\",\"to\":\"state-2\"}]}"
                 }
             ],
             "portsOut": [
                 {
                     "name": "Result",
                     "value": 0
+                },
+                {
+                    "name": "Active State",
+                    "value": "Main"
+                }
+            ]
+        },
+        {
+            "opId": "3c419618-4ef2-4a15-8a94-369f4c17fe07",
+            "id": "pyx82qkzn",
+            "attribs": {},
+            "uiAttribs": {
+                "translate": {
+                    "x": -2625.071677010805,
+                    "y": -1388.5267903162885
+                }
+            },
+            "portsIn": [
+                {
+                    "name": "Number",
+                    "value": 0
+                },
+                {
+                    "name": "Stored Automata Data",
+                    "value": "{\"states\":[{\"id\":\"state-0\",\"label\":\"START\",\"x\":177.53579181249998,\"y\":607.48210409375},{\"id\":\"state-1\",\"label\":\"Main\",\"x\":371,\"y\":343.3333282470703}],\"transitions\":[{\"id\":\"transition-0\",\"from\":\"state-0\",\"to\":\"state-1\"}]}"
+                }
+            ],
+            "portsOut": [
+                {
+                    "name": "Result",
+                    "value": 0
+                },
+                {
+                    "name": "Active State",
+                    "links": [
+                        {
+                            "portIn": "String",
+                            "portOut": "Active State",
+                            "objIn": "sxdlb66nh",
+                            "objOut": "pyx82qkzn"
+                        }
+                    ]
                 }
             ]
         }
@@ -193,9 +257,9 @@
         "bookmarks": [],
         "viewBoxesGl": {
             "0": {
-                "x": -2254.4020192509283,
-                "y": -1591.4532263278484,
-                "z": 572.528858245283
+                "x": -2350.252465435307,
+                "y": -1892.6173947943075,
+                "z": 600.0095735323663
             }
         },
         "outline": {
@@ -216,7 +280,7 @@
     "summary": {
         "title": "automataTestbed"
     },
-    "opsHash": "bca491ec6a388d1900ac675bac26b8ef9cc000dc",
+    "opsHash": "89cd80ae0d4fa3259bbf09bd8a0e73ddfe70171c",
     "buildInfo": {
         "updateWarning": false,
         "core": {

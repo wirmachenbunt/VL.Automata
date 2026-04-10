@@ -28,6 +28,10 @@
                 "type": 0,
                 "name": "Result",
                 "subType": "number"
+            },
+            {
+                "type": 5,
+                "name": "Active State"
             }
         ]
     },
