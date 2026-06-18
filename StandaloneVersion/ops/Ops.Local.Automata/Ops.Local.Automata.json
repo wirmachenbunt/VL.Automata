@@ -10,11 +10,6 @@
                 "name": "Trigger"
             },
             {
-                "type": 0,
-                "name": "Number",
-                "subType": "number"
-            },
-            {
                 "type": 1,
                 "name": "Show Tab"
             }
@@ -23,11 +18,6 @@
             {
                 "type": 1,
                 "name": "Next"
-            },
-            {
-                "type": 0,
-                "name": "Result",
-                "subType": "number"
             },
             {
                 "type": 5,

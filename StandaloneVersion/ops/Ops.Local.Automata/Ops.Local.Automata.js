@@ -7,49 +7,55 @@ const Konva = konvaModule.default || konvaModule;
 
 const
     exec = op.inTrigger("Trigger"),
-    myNumber = op.inFloat("Number"),
     next = op.outTrigger("Next"),
     inShow = op.inTriggerButton("Show Tab"),
     inStoreData = op.inString("Stored Automata Data", ""),
-    result = op.outNumber("Result"),
     outActiveState = op.outString("Active State");
 
 inStoreData.setUiAttribs({ "hidePort": true, "greyout": true });
 
 inShow.onTriggered = addmytab;
 
-
+let konvaContainerId = null;
+let konvaState = null;
 
 exec.onTriggered = () =>
 {
-    result.set(myNumber.get() * 100);
+    if (CABLES.UI && konvaContainerId && !konvaState)
+    {
+        const container = document.getElementById(konvaContainerId);
+        if (container) konvaState = initKonvaUI(container);
+    }
+    else if (konvaState && konvaState.layer)
+    {
+        konvaState.layer.batchDraw();
+    }
+
+    next.trigger();
 };
 
 function addmytab()
 {
-if(CABLES.UI)
-{
-    var tab;
+    if (!CABLES.UI) return;
+
     var containerId = "konva-container-" + op.id;
     var tabName = "Automata " + op.id.substring(0, 6);
     var html = '<div id="' + containerId + '" style="width:100%;height:100%;overflow:hidden;"></div>';
-    tab = new CABLES.UI.Tab(tabName, { "icon": "cube", "infotext": "tab_gltf", "padding": false, "singleton": true });
+    var tab = new CABLES.UI.Tab(tabName, { "icon": "cube", "infotext": "tab_gltf", "padding": false, "singleton": true });
 
     gui.mainTabs.addTab(tab, true);
-
     tab.html(html);
-
     gui.maintabPanel.show(true);
 
-    requestAnimationFrame(() =>
-    {
-        var container = document.getElementById(containerId);
-        if (!container)
-        {
-            op.log("konva-container not found in DOM");
-            return;
-        }
+    konvaContainerId = containerId;
+    konvaState = null;
 
+    const container = document.getElementById(containerId);
+    if (container) konvaState = initKonvaUI(container);
+}
+
+function initKonvaUI(container)
+{
         var width = container.offsetWidth || 800;
         var height = container.offsetHeight || 600;
 
@@ -677,6 +683,7 @@ if(CABLES.UI)
             node.on("contextmenu", (event) =>
             {
                 event.evt.preventDefault();
+                if (event.evt.ctrlKey) return;
                 pendingTransitionFrom = state.id;
                 updateTempTransition(stage.getPointerPosition());
             });
@@ -918,7 +925,6 @@ if(CABLES.UI)
             stage.batchDraw();
         });
         resizeObserver.observe(container);
-    });
-}
 
+        return { stage: stage, layer: layer };
 }
