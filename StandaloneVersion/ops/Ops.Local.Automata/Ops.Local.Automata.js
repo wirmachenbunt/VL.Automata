@@ -14,7 +14,8 @@ const
     resetIn = op.inTriggerButton("Reset"),
     frameCountIn = op.inInt("Frame Count", 60),
     outActiveState = op.outString("Active State"),
-    frameCounterOut = op.outNumber("Frame Counter"),
+    frameCounterOut = op.outNumber("State Frames"),
+    outTransitionCountdownOut = op.outNumber("Transition Countdown"),
     outStates = op.outArray("States");
 
 inStoreData.setUiAttribs({ "hidePort": true, "greyout": true });
@@ -27,6 +28,78 @@ let currentActiveStateId = null;
 let onActiveStateChanged = null;
 let lastStateChangeAt = performance.now();
 let resetTargets = [];
+let currentActiveTransitionId = null;
+let onTransitionActivityChanged = null;
+let pendingTransition = null;
+
+function sanitizeFrames(value)
+{
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function getNormalizedTransitionCountdown()
+{
+    if (!pendingTransition || pendingTransition.frames <= 0) return 0;
+
+    const elapsedFrames = (performance.now() - pendingTransition.startedAt) / (1000 / 60);
+    const remainingFrames = Math.max(pendingTransition.frames - elapsedFrames, 0);
+    return remainingFrames / pendingTransition.frames;
+}
+
+function updateTransitionCountdownOutput()
+{
+    outTransitionCountdownOut.set(getNormalizedTransitionCountdown());
+}
+
+function setActiveTransitionId(id)
+{
+    currentActiveTransitionId = id || null;
+    if (onTransitionActivityChanged) onTransitionActivityChanged(currentActiveTransitionId);
+}
+
+function cancelPendingTransition()
+{
+    pendingTransition = null;
+    setActiveTransitionId(null);
+    updateTransitionCountdownOutput();
+}
+
+function startTransition(transition)
+{
+    if (!transition) return;
+    const frames = sanitizeFrames(transition.frames);
+
+    if (frames <= 0)
+    {
+        cancelPendingTransition();
+        setActiveStateId(transition.to);
+        return;
+    }
+
+    pendingTransition = {
+        id: transition.id,
+        from: transition.from,
+        to: transition.to,
+        frames: frames,
+        startedAt: performance.now(),
+    };
+    setActiveTransitionId(transition.id);
+    updateTransitionCountdownOutput();
+}
+
+function processPendingTransition()
+{
+    if (!pendingTransition) return;
+
+    const elapsedFrames = Math.floor((performance.now() - pendingTransition.startedAt) / (1000 / 60));
+    if (elapsedFrames < pendingTransition.frames) return;
+
+    const nextStateId = pendingTransition.to;
+    pendingTransition = null;
+    setActiveTransitionId(null);
+    setActiveStateId(nextStateId);
+}
 
 function updateFrameCounterOutput()
 {
@@ -41,9 +114,16 @@ function framesSinceStateChange()
 op.onFrame = () =>
 {
     updateFrameCounterOutput();
+    updateTransitionCountdownOutput();
+    processPendingTransition();
 };
 
-setInterval(updateFrameCounterOutput, 100);
+setInterval(() =>
+{
+    updateFrameCounterOutput();
+    updateTransitionCountdownOutput();
+    processPendingTransition();
+}, 16);
 
 function parseStoredData()
 {
@@ -167,6 +247,7 @@ resetIn.onTriggered = () =>
 {
     const targetId = getResetTargetId();
     if (!targetId) return;
+    cancelPendingTransition();
     setActiveStateId(targetId);
 };
 
@@ -177,7 +258,15 @@ function getTransitionInfos()
         .map((t) =>
         {
             const name = getStateLabel(t.from) + " to " + getStateLabel(t.to);
-            return { name, transition: { from: t.from, to: t.to } };
+            return {
+                name,
+                transition: {
+                    id: typeof t.id === "string" ? t.id : (t.from + "-to-" + t.to),
+                    from: t.from,
+                    to: t.to,
+                    frames: sanitizeFrames(t.frames),
+                }
+            };
         })
         .filter((info) => info.name.trim().length > 0);
 }
@@ -197,10 +286,9 @@ function ensureTrigger(name, transition)
         const entry = createdTriggers.get(safeName);
         const t = entry ? entry.transition : null;
         if (!t) return;
-        const minFrames = Math.max(0, frameCountIn.get() | 0);
-        if (currentActiveStateId && framesSinceStateChange() < minFrames) return;
+        if (pendingTransition) return;
         if (currentActiveStateId !== t.from) return;
-        setActiveStateId(t.to);
+        startTransition(t);
     };
     createdTriggers.set(safeName, { trigger, transition });
 }
@@ -219,6 +307,17 @@ function rebuildTriggers()
 {
     parseStoredData();
     updateResetTargets();
+
+    if (pendingTransition)
+    {
+        const stillValid = parsedData.transitions.some((t) =>
+            t
+            && String(t.id) === pendingTransition.id
+            && String(t.from) === pendingTransition.from
+            && String(t.to) === pendingTransition.to
+        );
+        if (!stillValid) cancelPendingTransition();
+    }
 
     const infos = getTransitionInfos();
     const nameSet = new Set(infos.map((i) => i.name));
@@ -302,6 +401,9 @@ function initKonvaUI(container)
             nodeShadow: "rgba(0, 0, 0, 0.35)",
             label: "#eaf7ff",
             transitionCyan: "#28e5ff",
+            transitionActive: "#ffd166",
+            transitionLabelBg: "rgb(99, 99, 99)",
+            transitionLabelBgActive: "rgb(141, 111, 46)",
         };
 
         const stage = new Konva.Stage({
@@ -318,6 +420,7 @@ function initKonvaUI(container)
         const transitions = [];
         let nextTransitionId = 0;
         let activeStateId = null;
+        let activeTransitionId = currentActiveTransitionId;
 
         onActiveStateChanged = (id) =>
         {
@@ -327,11 +430,26 @@ function initKonvaUI(container)
             layer.batchDraw();
         };
 
+        onTransitionActivityChanged = (id) =>
+        {
+            activeTransitionId = id;
+            updateObjects();
+            layer.batchDraw();
+        };
+
         function updateActiveStateOutput()
         {
             setActiveStateId(activeStateId);
         }
         let activeLabelEditor = null;
+
+        function getTransitionLabelText(transition)
+        {
+            const fromLabel = getStateLabelById(transition.from);
+            const toLabel = getStateLabelById(transition.to);
+            const frames = sanitizeFrames(transition.frames);
+            return fromLabel + " to " + toLabel + " [" + frames + "f]";
+        }
 
         // Load saved data or create default start state
         let savedData = null;
@@ -366,6 +484,7 @@ function initKonvaUI(container)
                             id: String(t.id),
                             from: String(t.from),
                             to: String(t.to),
+                            frames: sanitizeFrames(t.frames),
                         });
                     }
                 });
@@ -398,7 +517,7 @@ function initKonvaUI(container)
         {
             var snapshot = {
                 states: states.map((s) => ({ id: s.id, label: s.label, x: s.x, y: s.y })),
-                transitions: transitions.map((t) => ({ id: t.id, from: t.from, to: t.to })),
+                transitions: transitions.map((t) => ({ id: t.id, from: t.from, to: t.to, frames: sanitizeFrames(t.frames) })),
             };
             inStoreData.set(JSON.stringify(snapshot));
             rebuildTriggers();
@@ -486,6 +605,7 @@ function initKonvaUI(container)
                     id: String(transition.id),
                     from: String(transition.from),
                     to: String(transition.to),
+                    frames: sanitizeFrames(transition.frames),
                 };
                 transitions.push(safeTransition);
                 createTransition(safeTransition);
@@ -612,12 +732,17 @@ function initKonvaUI(container)
 
                 const points = getTransitionPoints(fromNode.position(), toNode.position());
                 line.points(points);
+                const isTransitionActive = activeTransitionId && transition.id === activeTransitionId;
+                const lineColor = isTransitionActive ? COLORS.transitionActive : COLORS.transitionCyan;
+                line.stroke(lineColor);
+                line.fill(lineColor);
                 if (label && labelText && labelBg)
                 {
-                    const nextText = getStateLabelById(transition.from) + " to " + getStateLabelById(transition.to);
+                    const nextText = getTransitionLabelText(transition);
                     const midX = (points[0] + points[2]) / 2;
                     const midY = (points[1] + points[3]) / 2;
                     label.position({ x: midX, y: midY });
+                    labelBg.fill(isTransitionActive ? COLORS.transitionLabelBgActive : COLORS.transitionLabelBg);
                     if (labelText.getAttr("cachedText") !== nextText)
                     {
                         labelText.text(nextText);
@@ -761,6 +886,87 @@ function initKonvaUI(container)
             input.addEventListener("blur", () => { commit(); });
         }
 
+        function startEditingTransitionFrames(transition, label, labelText)
+        {
+            if (activeLabelEditor)
+            {
+                activeLabelEditor.remove();
+                activeLabelEditor = null;
+            }
+
+            const labelPosition = label.getAbsolutePosition();
+            const inputWidth = Math.max(labelText.width() + 40, 140);
+            const inputHeight = Math.max(labelText.height() + 26, 44);
+            const posX = labelPosition.x - inputWidth / 2;
+            const posY = labelPosition.y - inputHeight / 2;
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.step = "1";
+            input.value = String(sanitizeFrames(transition.frames));
+            input.style.position = "absolute";
+            input.style.top = posY + "px";
+            input.style.left = posX + "px";
+            input.style.width = inputWidth + "px";
+            input.style.height = inputHeight + "px";
+            input.style.fontSize = Math.max(labelText.fontSize() + 4, 18) + "px";
+            input.style.fontFamily = labelText.fontFamily();
+            input.style.color = labelText.fill();
+            input.style.background = "rgba(20,20,20,1)";
+            input.style.border = "1px solid #4aa3ff";
+            input.style.padding = "12px";
+            input.style.margin = "0";
+            input.style.textAlign = "center";
+            input.style.outline = "none";
+            input.style.boxSizing = "border-box";
+            input.style.zIndex = "9999";
+
+            container.style.position = "relative";
+            container.appendChild(input);
+            input.focus();
+            input.select();
+            activeLabelEditor = input;
+
+            let committed = false;
+
+            const cleanup = () =>
+            {
+                if (activeLabelEditor && activeLabelEditor.parentNode)
+                {
+                    activeLabelEditor.remove();
+                }
+                activeLabelEditor = null;
+            };
+
+            const commit = () =>
+            {
+                if (committed) return;
+                committed = true;
+                transition.frames = sanitizeFrames(input.value);
+                cleanup();
+                updateObjects();
+                layer.batchDraw();
+                saveState();
+            };
+
+            input.addEventListener("keydown", (event) =>
+            {
+                if (event.key === "Enter")
+                {
+                    event.preventDefault();
+                    commit();
+                }
+                else if (event.key === "Escape")
+                {
+                    event.preventDefault();
+                    cleanup();
+                }
+            });
+
+            input.addEventListener("blur", () => { commit(); });
+        }
+
         function createTransition(transition)
         {
             const line = new Konva.Arrow({
@@ -778,7 +984,7 @@ function initKonvaUI(container)
             });
             const labelBg = new Konva.Rect({
                 id: transition.id + "-label-bg",
-                fill: "rgb(99, 99, 99)",
+                fill: COLORS.transitionLabelBg,
                 cornerRadius: 8,
                 width: 0,
                 height: 0,
@@ -786,14 +992,14 @@ function initKonvaUI(container)
             });
             const labelText = new Konva.Text({
                 id: transition.id + "-label-text",
-                text: getStateLabelById(transition.from) + " to " + getStateLabelById(transition.to),
+                text: getTransitionLabelText(transition),
                 fontSize: 12,
                 fontFamily: "Arial",
                 fill: COLORS.label,
                 align: "center",
                 listening: true,
             });
-            labelText.setAttr("cachedText", getStateLabelById(transition.from) + " to " + getStateLabelById(transition.to));
+            labelText.setAttr("cachedText", getTransitionLabelText(transition));
             const textWidth = labelText.width();
             const textHeight = labelText.height();
             const bgWidth = textWidth * 1.5;
@@ -811,21 +1017,46 @@ function initKonvaUI(container)
             label.offsetY(rect.height / 2);
             label.cache();
 
-            const handleMiddleClick = (event) =>
+            const handleMouseDown = (event) =>
             {
+                if (event.evt.button === 0 && event.evt.ctrlKey)
+                {
+                    event.evt.preventDefault();
+                    event.cancelBubble = true;
+                    if (!pendingTransition && currentActiveStateId === transition.from)
+                    {
+                        startTransition(transition);
+                    }
+                    return;
+                }
+
                 if (event.evt.button !== 1 && !(event.evt.button === 0 && event.evt.altKey)) return;
                 event.evt.preventDefault();
                 removeTransition(transition.id);
             };
 
-            labelBg.on("mousedown", handleMiddleClick);
-            labelText.on("mousedown", handleMiddleClick);
+            const handleDoubleClick = (event) =>
+            {
+                event.cancelBubble = true;
+                startEditingTransitionFrames(transition, label, labelText);
+            };
+
+            labelBg.on("mousedown", handleMouseDown);
+            labelText.on("mousedown", handleMouseDown);
+            labelBg.on("dblclick", handleDoubleClick);
+            labelText.on("dblclick", handleDoubleClick);
         }
 
         function removeTransition(transitionId, skipUpdate)
         {
             const index = transitions.findIndex((transition) => transition.id === transitionId);
             if (index === -1) return;
+
+            if (pendingTransition && pendingTransition.id === transitionId)
+            {
+                cancelPendingTransition();
+            }
+
             transitions.splice(index, 1);
             const line = layer.findOne("#" + transitionId);
             const label = layer.findOne("#" + transitionId + "-label");
@@ -852,6 +1083,7 @@ function initKonvaUI(container)
                 id: "transition-" + nextTransitionId,
                 from: fromId,
                 to: toId,
+                frames: 0,
             };
             nextTransitionId += 1;
             transitions.push(transition);
@@ -873,6 +1105,11 @@ function initKonvaUI(container)
             {
                 pendingTransitionFrom = null;
                 tempTransition.visible(false);
+            }
+
+            if (pendingTransition && (pendingTransition.from === stateId || pendingTransition.to === stateId))
+            {
+                cancelPendingTransition();
             }
 
             states.splice(index, 1);

@@ -33,10 +33,6 @@
             },
             {
                 "type": 1,
-                "name": "START to Hallo"
-            },
-            {
-                "type": 1,
                 "name": "Hallo to Haus"
             },
             {
@@ -46,6 +42,10 @@
             {
                 "type": 1,
                 "name": "Gallery to Haus"
+            },
+            {
+                "type": 1,
+                "name": "START to Hallo"
             }
         ],
         "portsOut": [
@@ -59,7 +59,12 @@
             },
             {
                 "type": 0,
-                "name": "Frame Counter",
+                "name": "State Frames",
+                "subType": "number"
+            },
+            {
+                "type": 0,
+                "name": "Transition Countdown",
                 "subType": "number"
             },
             {
