@@ -6,13 +6,249 @@ const konvaModule = op.require("konva");
 const Konva = konvaModule.default || konvaModule;
 
 const
+    inStoreData = op.inString("Stored Automata Data", ""),
     exec = op.inTrigger("Trigger"),
     next = op.outTrigger("Next"),
     inShow = op.inTriggerButton("Show Tab"),
-    inStoreData = op.inString("Stored Automata Data", ""),
-    outActiveState = op.outString("Active State");
+    resetTargetIn = op.inDropDown("Reset Target", [""], ""),
+    resetIn = op.inTriggerButton("Reset"),
+    frameCountIn = op.inInt("Frame Count", 60),
+    outActiveState = op.outString("Active State"),
+    frameCounterOut = op.outNumber("Frame Counter"),
+    outStates = op.outArray("States");
 
 inStoreData.setUiAttribs({ "hidePort": true, "greyout": true });
+inShow.setUiAttribs({ "hidePort": true });
+
+// --- Dynamic transition triggers (driven by inStoreData) ---
+const createdTriggers = new Map();
+let parsedData = { states: [], transitions: [] };
+let currentActiveStateId = null;
+let onActiveStateChanged = null;
+let lastStateChangeAt = performance.now();
+let resetTargets = [];
+
+function updateFrameCounterOutput()
+{
+    frameCounterOut.set(framesSinceStateChange());
+}
+
+function framesSinceStateChange()
+{
+    return Math.floor((performance.now() - lastStateChangeAt) / (1000 / 60));
+}
+
+op.onFrame = () =>
+{
+    updateFrameCounterOutput();
+};
+
+setInterval(updateFrameCounterOutput, 100);
+
+function parseStoredData()
+{
+    try
+    {
+        const stored = inStoreData.get();
+        const data = stored ? JSON.parse(stored) : null;
+        parsedData = {
+            states: data && Array.isArray(data.states) ? data.states : [],
+            transitions: data && Array.isArray(data.transitions) ? data.transitions : [],
+        };
+    }
+    catch (e)
+    {
+        parsedData = { states: [], transitions: [] };
+    }
+}
+
+function getStateLabel(id)
+{
+    const s = parsedData.states.find((x) => x && x.id === id);
+    return s && typeof s.label === "string" && s.label.trim().length > 0 ? s.label : id;
+}
+
+function getResetTargetLabel(state, counts)
+{
+    const baseLabel = state && typeof state.label === "string" && state.label.trim().length > 0
+        ? state.label.trim()
+        : String(state.id);
+
+    return counts.get(baseLabel) > 1
+        ? baseLabel + " (" + state.id + ")"
+        : baseLabel;
+}
+
+function updateResetTargets()
+{
+    const counts = new Map();
+    parsedData.states.forEach((state) =>
+    {
+        if (!state || !state.id) return;
+        const baseLabel = typeof state.label === "string" && state.label.trim().length > 0
+            ? state.label.trim()
+            : String(state.id);
+        counts.set(baseLabel, (counts.get(baseLabel) || 0) + 1);
+    });
+
+    resetTargets = parsedData.states
+        .filter((state) => state && state.id)
+        .map((state) => ({
+            id: String(state.id),
+            label: getResetTargetLabel(state, counts),
+        }));
+
+    const values = resetTargets.length
+        ? resetTargets.map((target) => target.label)
+        : [""];
+    const selectedLabel = typeof resetTargetIn.value === "string" ? resetTargetIn.value : "";
+    const selectedExists = values.includes(selectedLabel);
+    const startTarget = resetTargets.find((target) =>
+    {
+        const state = parsedData.states.find((item) => item && item.id === target.id);
+        return state && typeof state.label === "string" && state.label.trim() === "START";
+    });
+    const fallbackLabel = startTarget
+        ? startTarget.label
+        : (resetTargets[0] ? resetTargets[0].label : "");
+
+    resetTargetIn.setUiAttribs({ "values": values });
+    resetTargetIn.set(selectedExists ? selectedLabel : fallbackLabel);
+    outStates.set(values);
+}
+
+function getResetTargetId()
+{
+    const selectedLabel = resetTargetIn.get();
+    const target = resetTargets.find((item) => item.label === selectedLabel);
+    return target ? target.id : null;
+}
+
+function refreshInspector()
+{
+    if (!CABLES.UI || typeof gui !== "object" || !gui) return;
+
+    const selectedOp = gui.patchView && typeof gui.patchView.getSelectedOp === "function"
+        ? gui.patchView.getSelectedOp()
+        : gui.opParams && gui.opParams.op
+            ? gui.opParams.op
+            : null;
+
+    if (selectedOp !== op) return;
+
+    if (gui.opParams && typeof gui.opParams.show === "function")
+    {
+        gui.opParams.show(op);
+        return;
+    }
+
+    if (gui.patchView && typeof gui.patchView.selectOp === "function")
+    {
+        gui.patchView.selectOp(op);
+        return;
+    }
+
+    if (typeof gui.selectOp === "function")
+    {
+        gui.selectOp(op);
+    }
+}
+
+function setActiveStateId(id)
+{
+    currentActiveStateId = id;
+    lastStateChangeAt = performance.now();
+    updateFrameCounterOutput();
+    outActiveState.set(id ? getStateLabel(id) : "");
+    if (onActiveStateChanged) onActiveStateChanged(id);
+}
+
+resetIn.onTriggered = () =>
+{
+    const targetId = getResetTargetId();
+    if (!targetId) return;
+    setActiveStateId(targetId);
+};
+
+function getTransitionInfos()
+{
+    return parsedData.transitions
+        .filter((t) => t && typeof t.from === "string" && typeof t.to === "string")
+        .map((t) =>
+        {
+            const name = getStateLabel(t.from) + " to " + getStateLabel(t.to);
+            return { name, transition: { from: t.from, to: t.to } };
+        })
+        .filter((info) => info.name.trim().length > 0);
+}
+
+function ensureTrigger(name, transition)
+{
+    const safeName = String(name).trim();
+    if (!safeName) return;
+    if (createdTriggers.has(safeName))
+    {
+        createdTriggers.get(safeName).transition = transition;
+        return;
+    }
+    const trigger = op.inTriggerButton(safeName);
+    trigger.onTriggered = () =>
+    {
+        const entry = createdTriggers.get(safeName);
+        const t = entry ? entry.transition : null;
+        if (!t) return;
+        const minFrames = Math.max(0, frameCountIn.get() | 0);
+        if (currentActiveStateId && framesSinceStateChange() < minFrames) return;
+        if (currentActiveStateId !== t.from) return;
+        setActiveStateId(t.to);
+    };
+    createdTriggers.set(safeName, { trigger, transition });
+}
+
+function removeTrigger(name)
+{
+    const entry = createdTriggers.get(name);
+    if (!entry) return;
+    const t = entry.trigger || entry;
+    if (typeof op.removePort === "function") op.removePort(t);
+    else if (t && typeof t.remove === "function") t.remove();
+    createdTriggers.delete(name);
+}
+
+function rebuildTriggers()
+{
+    parseStoredData();
+    updateResetTargets();
+
+    const infos = getTransitionInfos();
+    const nameSet = new Set(infos.map((i) => i.name));
+
+    Array.from(createdTriggers.keys())
+        .filter((n) => !nameSet.has(n))
+        .forEach(removeTrigger);
+
+    infos.forEach((info) => ensureTrigger(info.name, info.transition));
+
+    const stillExists = currentActiveStateId
+        && parsedData.states.some((s) => s && s.id === currentActiveStateId);
+    if (!stillExists)
+    {
+        const start = parsedData.states.find(
+            (s) => s && typeof s.label === "string" && s.label.trim() === "START"
+        );
+        const fallback = start || parsedData.states[0] || null;
+        setActiveStateId(fallback ? fallback.id : null);
+    }
+    else
+    {
+        outActiveState.set(getStateLabel(currentActiveStateId));
+    }
+
+    refreshInspector();
+}
+
+inStoreData.onChange = rebuildTriggers;
+rebuildTriggers();
 
 inShow.onTriggered = addmytab;
 
@@ -83,10 +319,17 @@ function initKonvaUI(container)
         let nextTransitionId = 0;
         let activeStateId = null;
 
+        onActiveStateChanged = (id) =>
+        {
+            if (activeStateId === id) return;
+            activeStateId = id;
+            updateObjects();
+            layer.batchDraw();
+        };
+
         function updateActiveStateOutput()
         {
-            const s = states.find((item) => item.id === activeStateId);
-            outActiveState.set(s ? (s.label || s.id) : "");
+            setActiveStateId(activeStateId);
         }
         let activeLabelEditor = null;
 
@@ -133,7 +376,9 @@ function initKonvaUI(container)
             nextTransitionId = transitions.length
                 ? Math.max(...transitions.map((t) => parseInt(String(t.id).split("-").pop(), 10) || 0)) + 1
                 : 0;
-            activeStateId = states.length ? states[0].id : null;
+            activeStateId = currentActiveStateId && states.some((s) => s.id === currentActiveStateId)
+                ? currentActiveStateId
+                : (states.length ? states[0].id : null);
             updateActiveStateOutput();
         }
         else
@@ -156,6 +401,7 @@ function initKonvaUI(container)
                 transitions: transitions.map((t) => ({ id: t.id, from: t.from, to: t.to })),
             };
             inStoreData.set(JSON.stringify(snapshot));
+            rebuildTriggers();
         }
 
         function getStateSnapshot()
@@ -567,7 +813,7 @@ function initKonvaUI(container)
 
             const handleMiddleClick = (event) =>
             {
-                if (event.evt.button !== 1) return;
+                if (event.evt.button !== 1 && !(event.evt.button === 0 && event.evt.altKey)) return;
                 event.evt.preventDefault();
                 removeTransition(transition.id);
             };
@@ -743,6 +989,20 @@ function initKonvaUI(container)
             // Left-click
             if (e.evt.button === 0)
             {
+                if (shape && shape.id && shape.id().startsWith("state-") && e.evt.altKey)
+                {
+                    e.evt.preventDefault();
+                    removeState(shape.id());
+                    return;
+                }
+
+                if (shape && shape.id && shape.id().startsWith("transition-") && e.evt.altKey)
+                {
+                    e.evt.preventDefault();
+                    removeTransition(shape.id());
+                    return;
+                }
+
                 // Alt+click on state: set active
                 if (shape && shape.id && shape.id().startsWith("state-") && e.evt.ctrlKey)
                 {

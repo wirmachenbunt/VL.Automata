@@ -10,8 +10,42 @@
                 "name": "Trigger"
             },
             {
+                "type": 0,
+                "name": "Reset Target index",
+                "subType": "integer"
+            },
+            {
                 "type": 1,
-                "name": "Show Tab"
+                "name": "Reset"
+            },
+            {
+                "type": 0,
+                "name": "Frame Count",
+                "subType": "integer"
+            },
+            {
+                "type": 1,
+                "name": "START to Main"
+            },
+            {
+                "type": 1,
+                "name": "Main to Gallery"
+            },
+            {
+                "type": 1,
+                "name": "START to Hallo"
+            },
+            {
+                "type": 1,
+                "name": "Hallo to Haus"
+            },
+            {
+                "type": 1,
+                "name": "Haus to Main"
+            },
+            {
+                "type": 1,
+                "name": "Gallery to Haus"
             }
         ],
         "portsOut": [
@@ -22,6 +56,15 @@
             {
                 "type": 5,
                 "name": "Active State"
+            },
+            {
+                "type": 0,
+                "name": "Frame Counter",
+                "subType": "number"
+            },
+            {
+                "type": 3,
+                "name": "States"
             }
         ]
     },
