@@ -31,6 +31,13 @@ let resetTargets = [];
 let currentActiveTransitionId = null;
 let onTransitionActivityChanged = null;
 let pendingTransition = null;
+const STATE_RADIUS = 50;
+const REGION_INACTIVE_FILL = "rgba(64, 180, 255, 0.12)";
+const REGION_INACTIVE_STROKE = "rgba(64, 180, 255, 0.50)";
+const REGION_ACTIVE_FILL = "rgba(64, 180, 255, 0.22)";
+const REGION_ACTIVE_STROKE = "rgba(120, 220, 255, 0.88)";
+const REGION_INACTIVE_TITLE_FILL = "rgba(220, 240, 255, 0.95)";
+const REGION_ACTIVE_TITLE_FILL = "rgba(245, 252, 255, 1)";
 
 function sanitizeFrames(value)
 {
@@ -434,6 +441,7 @@ function initKonvaUI(container)
         const states = [];
         const transitions = [];
         const regions = [];
+        const regionActiveOutputs = new Map();
         let nextTransitionId = 0;
         let nextRegionId = 0;
         let activeStateId = null;
@@ -605,6 +613,7 @@ function initKonvaUI(container)
                 const regionTitleNode = regionLayer.findOne("#" + region.id + "-title");
                 if (regionNode) regionNode.destroy();
                 if (regionTitleNode) regionTitleNode.destroy();
+                removeRegionActiveOutput(region.id);
             });
             states.forEach((state) =>
             {
@@ -818,6 +827,7 @@ function initKonvaUI(container)
                     label.offsetY(label.height() / 2);
                 }
             });
+            syncRegionActivityOutputs();
             transitions.forEach((transition) =>
             {
                 const line = layer.findOne("#" + transition.id);
@@ -1157,8 +1167,8 @@ function initKonvaUI(container)
                 x: region.x,
                 y: region.y,
                 radius: region.radius,
-                fill: "rgba(64, 180, 255, 0.12)",
-                stroke: "rgba(64, 180, 255, 0.50)",
+                fill: REGION_INACTIVE_FILL,
+                stroke: REGION_INACTIVE_STROKE,
                 strokeWidth: 2,
                 listening: true,
             });
@@ -1170,7 +1180,7 @@ function initKonvaUI(container)
                 text: title,
                 fontSize: 16,
                 fontFamily: "Arial",
-                fill: "rgba(220, 240, 255, 0.95)",
+                fill: REGION_INACTIVE_TITLE_FILL,
                 align: "center",
                 listening: true,
             });
@@ -1191,6 +1201,102 @@ function initKonvaUI(container)
 
             regionLayer.add(circle);
             regionLayer.add(titleText);
+            ensureRegionActiveOutput(region);
+            regionLayer.batchDraw();
+        }
+
+        function getRegionActiveOutputName(region)
+        {
+            if (!region || !region.id) return null;
+
+            const baseTitle = typeof region.title === "string" && region.title.trim().length > 0
+                ? region.title.trim()
+                : region.id;
+            const baseName = baseTitle + " Active";
+            const hasDuplicateTitle = regions.some((otherRegion) =>
+                otherRegion
+                && otherRegion.id !== region.id
+                && ((typeof otherRegion.title === "string" && otherRegion.title.trim().length > 0
+                    ? otherRegion.title.trim()
+                    : otherRegion.id) + " Active") === baseName
+            );
+
+            return hasDuplicateTitle ? baseName + " (" + region.id + ")" : baseName;
+        }
+
+        function ensureRegionActiveOutput(region)
+        {
+            if (!region || !region.id) return null;
+
+            const desiredName = getRegionActiveOutputName(region);
+            const existingEntry = regionActiveOutputs.get(region.id);
+            if (existingEntry && existingEntry.name === desiredName) return existingEntry.port;
+
+            if (existingEntry && existingEntry.port)
+            {
+                existingEntry.name = desiredName;
+                existingEntry.port.name = desiredName;
+                return existingEntry.port;
+            }
+
+            const port = op.outNumber(desiredName);
+            regionActiveOutputs.set(region.id, { port, name: desiredName });
+            return port;
+        }
+
+        function removeRegionActiveOutput(regionId)
+        {
+            const entry = regionActiveOutputs.get(regionId);
+            if (!entry) return;
+
+            if (entry.port && typeof op.removePort === "function")
+            {
+                op.removePort(entry.port);
+            }
+            regionActiveOutputs.delete(regionId);
+        }
+
+        function isStateInsideRegion(state, region)
+        {
+            if (!state || !region) return false;
+            const dx = state.x - region.x;
+            const dy = state.y - region.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance <= region.radius + STATE_RADIUS;
+        }
+
+        function updateRegionAppearance(region, isActive)
+        {
+            const circle = regionLayer.findOne("#" + region.id);
+            const title = regionLayer.findOne("#" + region.id + "-title");
+
+            if (circle)
+            {
+                circle.fill(isActive ? REGION_ACTIVE_FILL : REGION_INACTIVE_FILL);
+                circle.stroke(isActive ? REGION_ACTIVE_STROKE : REGION_INACTIVE_STROKE);
+                circle.strokeWidth(isActive ? 3 : 2);
+            }
+
+            if (title)
+            {
+                title.fill(isActive ? REGION_ACTIVE_TITLE_FILL : REGION_INACTIVE_TITLE_FILL);
+            }
+        }
+
+        function syncRegionActivityOutputs()
+        {
+            const activeState = states.find((state) => state.id === activeStateId) || null;
+
+            regions.forEach((region) =>
+            {
+                const isActive = !!(activeState && isStateInsideRegion(activeState, region));
+                region.active = isActive;
+
+                const port = ensureRegionActiveOutput(region);
+                if (port) port.set(isActive ? 1 : 0);
+                updateRegionAppearance(region, isActive);
+            });
+
             regionLayer.batchDraw();
         }
 
@@ -1256,6 +1362,7 @@ function initKonvaUI(container)
                 label.offsetY(label.height() / 2);
                 cleanup();
                 regionLayer.batchDraw();
+                syncRegionActivityOutputs();
                 saveState();
             };
 
@@ -1286,7 +1393,9 @@ function initKonvaUI(container)
             const title = regionLayer.findOne("#" + regionId + "-title");
             if (circle) circle.destroy();
             if (title) title.destroy();
+            removeRegionActiveOutput(regionId);
             regionLayer.batchDraw();
+            syncRegionActivityOutputs();
             saveState();
         }
 
@@ -1434,7 +1543,7 @@ function initKonvaUI(container)
                 fill: COLORS.nodeFill,
                 stroke: isHighlighted ? COLORS.nodeStrokeHighlight : COLORS.nodeStroke,
                 strokeWidth: 4,
-                radius: 50,
+                radius: STATE_RADIUS,
                 shadowBlur: 12,
                 shadowColor: COLORS.nodeShadow,
                 shadowForStrokeEnabled: false,
@@ -1677,7 +1786,7 @@ function initKonvaUI(container)
                 const radius = Math.max(MIN_REGION_RADIUS, Math.sqrt(dx * dx + dy * dy));
                 regionResizeTarget.regionObj.radius = radius;
                 if (regionResizeTarget.circle) regionResizeTarget.circle.radius(radius);
-                regionLayer.batchDraw();
+                    syncRegionActivityOutputs();
                 container.style.cursor = "nwse-resize";
                 return;
             }
@@ -1700,7 +1809,7 @@ function initKonvaUI(container)
                     regionDragTarget.title.y(nextY);
                 }
 
-                regionLayer.batchDraw();
+                    syncRegionActivityOutputs();
                 container.style.cursor = "grabbing";
                 return;
             }
@@ -1759,6 +1868,7 @@ function initKonvaUI(container)
                     nextRegionId += 1;
                     regions.push(region);
                     createRegion(region);
+                    syncRegionActivityOutputs();
                     didCreateRegion = true;
                 }
 
@@ -1766,7 +1876,7 @@ function initKonvaUI(container)
                 regionCreationActive = false;
                 regionDraftCircle.visible(false);
                 regionDraftCircle.radius(0);
-                regionLayer.batchDraw();
+                syncRegionActivityOutputs();
             }
 
             if (dragTarget) saveState();
