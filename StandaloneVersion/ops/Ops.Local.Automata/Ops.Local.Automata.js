@@ -10,7 +10,7 @@ const
     exec = op.inTrigger("Trigger"),
     next = op.outTrigger("Next"),
     inShow = op.inTriggerButton("Show Tab"),
-    resetTargetIn = op.inDropDown("Reset Target", [""], ""),
+    resetTargetIn = op.inDropDown("Reset Target", ["START"], "START"),
     resetIn = op.inTriggerButton("Reset"),
     frameCountIn = op.inInt("Frame Count", 60),
     outActiveState = op.outString("Active State"),
@@ -424,13 +424,18 @@ function initKonvaUI(container)
             height: height,
         });
 
+        const regionLayer = new Konva.Layer();
+        stage.add(regionLayer);
+
         const layer = new Konva.Layer();
         stage.add(layer);
 
         let nextStateId = 0;
         const states = [];
         const transitions = [];
+        const regions = [];
         let nextTransitionId = 0;
+        let nextRegionId = 0;
         let activeStateId = null;
         let activeTransitionId = currentActiveTransitionId;
 
@@ -474,6 +479,27 @@ function initKonvaUI(container)
 
         if (savedData && Array.isArray(savedData.states) && savedData.states.length > 0)
         {
+            if (Array.isArray(savedData.regions))
+            {
+                savedData.regions.forEach((region) =>
+                {
+                    if (!region || typeof region.x !== "number" || typeof region.y !== "number") return;
+                    const safeRadius = Math.max(0, Number(region.radius) || 0);
+                    if (safeRadius <= 0) return;
+                    regions.push({
+                        id: typeof region.id === "string" && region.id.length > 0
+                            ? region.id
+                            : "region-" + nextRegionId,
+                        x: region.x,
+                        y: region.y,
+                        radius: safeRadius,
+                        title: typeof region.title === "string" && region.title.trim().length > 0
+                            ? region.title.trim()
+                            : "Region " + (nextRegionId + 1),
+                    });
+                    nextRegionId += 1;
+                });
+            }
             savedData.states.forEach((s) =>
             {
                 if (s && s.id && typeof s.x === "number" && typeof s.y === "number")
@@ -507,6 +533,9 @@ function initKonvaUI(container)
             nextTransitionId = transitions.length
                 ? Math.max(...transitions.map((t) => parseInt(String(t.id).split("-").pop(), 10) || 0)) + 1
                 : 0;
+            nextRegionId = regions.length
+                ? Math.max(...regions.map((region) => parseInt(String(region.id).split("-").pop(), 10) || 0)) + 1
+                : 0;
             activeStateId = currentActiveStateId && states.some((s) => s.id === currentActiveStateId)
                 ? currentActiveStateId
                 : (states.length ? states[0].id : null);
@@ -528,6 +557,13 @@ function initKonvaUI(container)
         function saveState()
         {
             var snapshot = {
+                regions: regions.map((region) => ({
+                    id: region.id,
+                    x: region.x,
+                    y: region.y,
+                    radius: region.radius,
+                    title: region.title,
+                })),
                 states: states.map((s) => ({ id: s.id, label: s.label, x: s.x, y: s.y })),
                 transitions: transitions.map((t) => ({ id: t.id, from: t.from, to: t.to, frames: sanitizeFrames(t.frames) })),
             };
@@ -538,6 +574,7 @@ function initKonvaUI(container)
         function getStateSnapshot()
         {
             return {
+                regions: regions.map((region) => ({ ...region })),
                 states: states.map((state) => ({ ...state })),
                 transitions: transitions.map((transition) => ({ ...transition })),
             };
@@ -562,6 +599,13 @@ function initKonvaUI(container)
 
         function clearCurrentState()
         {
+            regions.forEach((region) =>
+            {
+                const regionNode = regionLayer.findOne("#" + region.id);
+                const regionTitleNode = regionLayer.findOne("#" + region.id + "-title");
+                if (regionNode) regionNode.destroy();
+                if (regionTitleNode) regionTitleNode.destroy();
+            });
             states.forEach((state) =>
             {
                 const node = layer.findOne("#" + state.id);
@@ -576,6 +620,7 @@ function initKonvaUI(container)
                 if (line) line.destroy();
                 if (label) label.destroy();
             });
+            regions.length = 0;
             states.length = 0;
             transitions.length = 0;
             pendingTransitionFrom = null;
@@ -594,6 +639,9 @@ function initKonvaUI(container)
                 : Array.isArray(data.connectors)
                     ? data.connectors
                     : [];
+            const incomingRegions = Array.isArray(data.regions)
+                ? data.regions
+                : [];
 
             clearCurrentState();
 
@@ -623,11 +671,35 @@ function initKonvaUI(container)
                 createTransition(safeTransition);
             });
 
+            incomingRegions.forEach((region) =>
+            {
+                if (!region || typeof region.x !== "number" || typeof region.y !== "number") return;
+                const safeRadius = Math.max(0, Number(region.radius) || 0);
+                if (safeRadius <= 0) return;
+                const safeRegion = {
+                    id: typeof region.id === "string" && region.id.length > 0
+                        ? region.id
+                        : "region-" + nextRegionId,
+                    x: region.x,
+                    y: region.y,
+                    radius: safeRadius,
+                    title: typeof region.title === "string" && region.title.trim().length > 0
+                        ? region.title.trim()
+                        : "Region " + (nextRegionId + 1),
+                };
+                regions.push(safeRegion);
+                createRegion(safeRegion);
+                nextRegionId += 1;
+            });
+
             nextStateId = states.length
                 ? Math.max(...states.map((s) => parseInt(String(s.id).split("-").pop(), 10) || 0)) + 1
                 : 0;
             nextTransitionId = transitions.length
                 ? Math.max(...transitions.map((t) => parseInt(String(t.id).split("-").pop(), 10) || 0)) + 1
+                : 0;
+            nextRegionId = regions.length
+                ? Math.max(...regions.map((region) => parseInt(String(region.id).split("-").pop(), 10) || 0)) + 1
                 : 0;
 
             activeStateId = states.length ? states[0].id : null;
@@ -683,6 +755,9 @@ function initKonvaUI(container)
         }
 
         let pendingTransitionFrom = null;
+        let regionDraftStart = null;
+        let regionCreationActive = false;
+        const MIN_REGION_RADIUS = 8;
         const tempTransition = new Konva.Arrow({
             stroke: COLORS.transitionCyan,
             fill: COLORS.transitionCyan,
@@ -693,6 +768,18 @@ function initKonvaUI(container)
             visible: false,
         });
         layer.add(tempTransition);
+
+        const regionDraftCircle = new Konva.Circle({
+            id: "region-draft",
+            fill: "rgba(64, 180, 255, 0.14)",
+            stroke: "rgba(64, 180, 255, 0.65)",
+            strokeWidth: 2,
+            dash: [8, 6],
+            radius: 0,
+            listening: false,
+            visible: false,
+        });
+        regionLayer.add(regionDraftCircle);
 
         function updateObjects()
         {
@@ -1059,6 +1146,199 @@ function initKonvaUI(container)
             labelText.on("dblclick", handleDoubleClick);
         }
 
+        function createRegion(region)
+        {
+            const title = typeof region.title === "string" && region.title.trim().length > 0
+                ? region.title.trim()
+                : region.id;
+
+            const circle = new Konva.Circle({
+                id: region.id,
+                x: region.x,
+                y: region.y,
+                radius: region.radius,
+                fill: "rgba(64, 180, 255, 0.12)",
+                stroke: "rgba(64, 180, 255, 0.50)",
+                strokeWidth: 2,
+                listening: true,
+            });
+
+            const titleText = new Konva.Text({
+                id: region.id + "-title",
+                x: region.x,
+                y: region.y,
+                text: title,
+                fontSize: 16,
+                fontFamily: "Arial",
+                fill: "rgba(220, 240, 255, 0.95)",
+                align: "center",
+                listening: true,
+            });
+            titleText.offsetX(titleText.width() / 2);
+            titleText.offsetY(titleText.height() / 2);
+
+            circle.on("dblclick", (event) =>
+            {
+                event.cancelBubble = true;
+                startEditingRegionTitle(region, titleText);
+            });
+
+            titleText.on("dblclick", (event) =>
+            {
+                event.cancelBubble = true;
+                startEditingRegionTitle(region, titleText);
+            });
+
+            regionLayer.add(circle);
+            regionLayer.add(titleText);
+            regionLayer.batchDraw();
+        }
+
+        function startEditingRegionTitle(region, label)
+        {
+            if (activeLabelEditor)
+            {
+                activeLabelEditor.remove();
+                activeLabelEditor = null;
+            }
+
+            const labelPosition = label.getAbsolutePosition();
+            const inputWidth = Math.max(label.width() + 40, 140);
+            const inputHeight = Math.max(label.height() + 24, 42);
+            const posX = labelPosition.x - inputWidth / 2;
+            const posY = labelPosition.y - inputHeight / 2;
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = region.title || label.text() || "";
+            input.style.position = "absolute";
+            input.style.top = posY + "px";
+            input.style.left = posX + "px";
+            input.style.width = inputWidth + "px";
+            input.style.height = inputHeight + "px";
+            input.style.fontSize = Math.max(label.fontSize() + 2, 16) + "px";
+            input.style.fontFamily = label.fontFamily();
+            input.style.color = "#eaf7ff";
+            input.style.background = "rgba(20,20,20,0.95)";
+            input.style.border = "1px solid #4aa3ff";
+            input.style.padding = "10px";
+            input.style.margin = "0";
+            input.style.textAlign = "center";
+            input.style.outline = "none";
+            input.style.boxSizing = "border-box";
+            input.style.zIndex = "9999";
+
+            container.style.position = "relative";
+            container.appendChild(input);
+            input.focus();
+            input.select();
+            activeLabelEditor = input;
+
+            let committed = false;
+
+            const cleanup = () =>
+            {
+                if (activeLabelEditor && activeLabelEditor.parentNode)
+                {
+                    activeLabelEditor.remove();
+                }
+                activeLabelEditor = null;
+            };
+
+            const commit = () =>
+            {
+                if (committed) return;
+                committed = true;
+                const newTitle = input.value.trim();
+                region.title = newTitle || region.title || "Region";
+                label.text(region.title);
+                label.offsetX(label.width() / 2);
+                label.offsetY(label.height() / 2);
+                cleanup();
+                regionLayer.batchDraw();
+                saveState();
+            };
+
+            input.addEventListener("keydown", (event) =>
+            {
+                if (event.key === "Enter")
+                {
+                    event.preventDefault();
+                    commit();
+                }
+                else if (event.key === "Escape")
+                {
+                    event.preventDefault();
+                    cleanup();
+                }
+            });
+
+            input.addEventListener("blur", () => { commit(); });
+        }
+
+        function removeRegion(regionId)
+        {
+            const index = regions.findIndex((region) => region.id === regionId);
+            if (index === -1) return;
+
+            regions.splice(index, 1);
+            const circle = regionLayer.findOne("#" + regionId);
+            const title = regionLayer.findOne("#" + regionId + "-title");
+            if (circle) circle.destroy();
+            if (title) title.destroy();
+            regionLayer.batchDraw();
+            saveState();
+        }
+
+        function getRegionIdFromShapeId(shapeId)
+        {
+            if (typeof shapeId !== "string" || !shapeId.startsWith("region-")) return null;
+            return shapeId.endsWith("-title") ? shapeId.slice(0, -6) : shapeId;
+        }
+
+        function isPointNearRegionEdge(region, point, tolerance = 10)
+        {
+            if (!region || !point) return false;
+            const dx = point.x - region.x;
+            const dy = point.y - region.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return Math.abs(distance - region.radius) <= tolerance;
+        }
+
+        function updateCursorForPointer(shapeId, stagePoint)
+        {
+            if (regionResizeTarget)
+            {
+                container.style.cursor = "nwse-resize";
+                return;
+            }
+
+            if (regionDragTarget || canvasDrag)
+            {
+                container.style.cursor = "grabbing";
+                return;
+            }
+
+            const regionId = getRegionIdFromShapeId(shapeId);
+            if (shapeId && shapeId.endsWith("-title") && regionId)
+            {
+                container.style.cursor = "grab";
+                return;
+            }
+
+            if (shapeId === regionId && regionId)
+            {
+                const regionObj = regions.find((region) => region.id === regionId);
+                if (regionObj && isPointNearRegionEdge(regionObj, stagePoint))
+                {
+                    container.style.cursor = "nwse-resize";
+                    return;
+                }
+            }
+
+            container.style.cursor = "default";
+        }
+
         function removeTransition(transitionId, skipUpdate)
         {
             const index = transitions.findIndex((transition) => transition.id === transitionId);
@@ -1105,6 +1385,7 @@ function initKonvaUI(container)
             saveState();
         }
 
+        regions.forEach((region) => { createRegion(region); });
         transitions.forEach((transition) => { createTransition(transition); });
 
         function removeState(stateId)
@@ -1212,6 +1493,8 @@ function initKonvaUI(container)
 
         // Manual drag tracking (Konva's built-in drag doesn't work inside cables tabs)
         let dragTarget = null; // { stateObj, node, label, offsetX, offsetY }
+        let regionDragTarget = null; // { regionObj, circle, title, offsetX, offsetY }
+        let regionResizeTarget = null; // { regionObj, circle }
         let canvasDrag = false;
         let canvasDragStart = null;
 
@@ -1221,6 +1504,8 @@ function initKonvaUI(container)
             if (!pointer) return;
             const stagePoint = getStagePointFromPointer(pointer);
             const shape = stage.getIntersection(pointer);
+            const shapeId = shape && shape.id ? shape.id() : null;
+            const regionId = getRegionIdFromShapeId(shapeId);
 
             // Middle-click: delete state or transition
             if (e.evt.button === 1)
@@ -1228,7 +1513,7 @@ function initKonvaUI(container)
                 e.evt.preventDefault();
                 if (shape && shape.id)
                 {
-                    const id = shape.id();
+                    const id = shapeId;
                     if (id.startsWith("state-")) removeState(id);
                     else if (id.startsWith("transition-")) removeTransition(id);
                 }
@@ -1238,24 +1523,45 @@ function initKonvaUI(container)
             // Left-click
             if (e.evt.button === 0)
             {
-                if (shape && shape.id && shape.id().startsWith("state-") && e.evt.altKey)
+                if (shapeId && shapeId.startsWith("state-") && e.evt.altKey)
                 {
                     e.evt.preventDefault();
-                    removeState(shape.id());
+                    removeState(shapeId);
                     return;
                 }
 
-                if (shape && shape.id && shape.id().startsWith("transition-") && e.evt.altKey)
+                if (shapeId && shapeId.startsWith("transition-") && e.evt.altKey)
                 {
                     e.evt.preventDefault();
-                    removeTransition(shape.id());
+                    removeTransition(shapeId);
                     return;
+                }
+
+                if (regionId && e.evt.altKey)
+                {
+                    e.evt.preventDefault();
+                    removeRegion(regionId);
+                    return;
+                }
+
+                if (shapeId === regionId && regionId)
+                {
+                    const regionObj = regions.find((region) => region.id === regionId);
+                    if (regionObj && isPointNearRegionEdge(regionObj, stagePoint))
+                    {
+                        regionResizeTarget = {
+                            regionObj: regionObj,
+                            circle: regionLayer.findOne("#" + regionId),
+                        };
+                        container.style.cursor = "nwse-resize";
+                        return;
+                    }
                 }
 
                 // Alt+click on state: set active
-                if (shape && shape.id && shape.id().startsWith("state-") && e.evt.ctrlKey)
+                if (shapeId && shapeId.startsWith("state-") && e.evt.ctrlKey)
                 {
-                    activeStateId = shape.id();
+                    activeStateId = shapeId;
                     updateActiveStateOutput();
                     updateObjects();
                     layer.batchDraw();
@@ -1266,12 +1572,12 @@ function initKonvaUI(container)
                 // Pending transition: complete it
                 if (pendingTransitionFrom)
                 {
-                    if (shape && shape.id && shape.id().startsWith("state-"))
+                    if (shapeId && shapeId.startsWith("state-"))
                     {
                         const fromId = pendingTransitionFrom;
                         pendingTransitionFrom = null;
                         tempTransition.visible(false);
-                        addTransition(fromId, shape.id());
+                        addTransition(fromId, shapeId);
                     }
                     else
                     {
@@ -1282,10 +1588,28 @@ function initKonvaUI(container)
                     return;
                 }
 
-                // Start dragging a state node
-                if (shape && shape.id && shape.id().startsWith("state-"))
+                // Drag a region by dragging its title text
+                if (shapeId && shapeId.endsWith("-title") && regionId)
                 {
-                    const stateObj = states.find((s) => s.id === shape.id());
+                    const regionObj = regions.find((region) => region.id === regionId);
+                    if (regionObj)
+                    {
+                        regionDragTarget = {
+                            regionObj: regionObj,
+                            circle: regionLayer.findOne("#" + regionId),
+                            title: regionLayer.findOne("#" + regionId + "-title"),
+                            offsetX: stagePoint.x - regionObj.x,
+                            offsetY: stagePoint.y - regionObj.y,
+                        };
+                        container.style.cursor = "grabbing";
+                    }
+                    return;
+                }
+
+                // Start dragging a state node
+                if (shapeId && shapeId.startsWith("state-"))
+                {
+                    const stateObj = states.find((s) => s.id === shapeId);
                     if (stateObj)
                     {
                         const node = layer.findOne("#" + stateObj.id);
@@ -1303,6 +1627,17 @@ function initKonvaUI(container)
                     }
                     return;
                 }
+
+                if (!shape && !e.evt.altKey && !e.evt.ctrlKey && !e.evt.metaKey && !e.evt.shiftKey)
+                {
+                    regionDraftStart = { x: stagePoint.x, y: stagePoint.y };
+                    regionCreationActive = true;
+                    regionDraftCircle.position(regionDraftStart);
+                    regionDraftCircle.radius(0);
+                    regionDraftCircle.visible(true);
+                    regionLayer.batchDraw();
+                    return;
+                }
             }
 
             // Right-click on empty canvas: start canvas pan
@@ -1311,6 +1646,7 @@ function initKonvaUI(container)
                 if (shape && shape instanceof Konva.Circle) return;
                 canvasDrag = true;
                 canvasDragStart = { x: e.evt.clientX - stage.x(), y: e.evt.clientY - stage.y() };
+                container.style.cursor = "grabbing";
             }
         });
 
@@ -1318,11 +1654,60 @@ function initKonvaUI(container)
         {
             const pointer = stage.getPointerPosition();
             if (!pointer) return;
+            const stagePoint = getStagePointFromPointer(pointer);
+            const shape = stage.getIntersection(pointer);
+            const shapeId = shape && shape.id ? shape.id() : null;
+
+            updateCursorForPointer(shapeId, stagePoint);
+
+            if (regionCreationActive && regionDraftStart)
+            {
+                const dx = stagePoint.x - regionDraftStart.x;
+                const dy = stagePoint.y - regionDraftStart.y;
+                const radius = Math.sqrt(dx * dx + dy * dy);
+                regionDraftCircle.radius(radius);
+                regionLayer.batchDraw();
+                return;
+            }
+
+            if (regionResizeTarget)
+            {
+                const dx = stagePoint.x - regionResizeTarget.regionObj.x;
+                const dy = stagePoint.y - regionResizeTarget.regionObj.y;
+                const radius = Math.max(MIN_REGION_RADIUS, Math.sqrt(dx * dx + dy * dy));
+                regionResizeTarget.regionObj.radius = radius;
+                if (regionResizeTarget.circle) regionResizeTarget.circle.radius(radius);
+                regionLayer.batchDraw();
+                container.style.cursor = "nwse-resize";
+                return;
+            }
+
+            if (regionDragTarget)
+            {
+                const nextX = stagePoint.x - regionDragTarget.offsetX;
+                const nextY = stagePoint.y - regionDragTarget.offsetY;
+                regionDragTarget.regionObj.x = nextX;
+                regionDragTarget.regionObj.y = nextY;
+
+                if (regionDragTarget.circle)
+                {
+                    regionDragTarget.circle.x(nextX);
+                    regionDragTarget.circle.y(nextY);
+                }
+                if (regionDragTarget.title)
+                {
+                    regionDragTarget.title.x(nextX);
+                    regionDragTarget.title.y(nextY);
+                }
+
+                regionLayer.batchDraw();
+                container.style.cursor = "grabbing";
+                return;
+            }
 
             // Dragging a state node
             if (dragTarget)
             {
-                const stagePoint = getStagePointFromPointer(pointer);
                 dragTarget.stateObj.x = stagePoint.x - dragTarget.offsetX;
                 dragTarget.stateObj.y = stagePoint.y - dragTarget.offsetY;
                 updateObjects();
@@ -1350,10 +1735,50 @@ function initKonvaUI(container)
 
         stage.on("mouseup", () =>
         {
+            let didCreateRegion = false;
+
+            if (regionCreationActive && regionDraftStart)
+            {
+                const pointer = stage.getPointerPosition();
+                const stagePoint = pointer
+                    ? getStagePointFromPointer(pointer)
+                    : regionDraftStart;
+                const dx = stagePoint.x - regionDraftStart.x;
+                const dy = stagePoint.y - regionDraftStart.y;
+                const radius = Math.sqrt(dx * dx + dy * dy);
+
+                if (radius >= MIN_REGION_RADIUS)
+                {
+                    const region = {
+                        id: "region-" + nextRegionId,
+                        x: regionDraftStart.x,
+                        y: regionDraftStart.y,
+                        radius: radius,
+                        title: "Region " + (nextRegionId + 1),
+                    };
+                    nextRegionId += 1;
+                    regions.push(region);
+                    createRegion(region);
+                    didCreateRegion = true;
+                }
+
+                regionDraftStart = null;
+                regionCreationActive = false;
+                regionDraftCircle.visible(false);
+                regionDraftCircle.radius(0);
+                regionLayer.batchDraw();
+            }
+
             if (dragTarget) saveState();
+            if (regionDragTarget) saveState();
+            if (regionResizeTarget) saveState();
+            if (didCreateRegion) saveState();
             dragTarget = null;
+            regionDragTarget = null;
+            regionResizeTarget = null;
             canvasDrag = false;
             canvasDragStart = null;
+            container.style.cursor = "default";
         });
 
         stage.on("dblclick", (e) =>
@@ -1420,8 +1845,11 @@ function initKonvaUI(container)
         container.addEventListener("mouseleave", () =>
         {
             dragTarget = null;
+            regionDragTarget = null;
+            regionResizeTarget = null;
             canvasDrag = false;
             canvasDragStart = null;
+            container.style.cursor = "default";
         });
 
         // Resize the Konva stage when the tab/container is resized

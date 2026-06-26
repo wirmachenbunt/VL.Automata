@@ -25,15 +25,15 @@
             },
             {
                 "type": 1,
-                "name": "START to state-1"
+                "name": "START to Pausenloop"
             },
             {
                 "type": 1,
-                "name": "state-1 to Menu"
+                "name": "Pausenloop to Menu😀"
             },
             {
                 "type": 1,
-                "name": "Menu to START"
+                "name": "Menu😀 to START"
             }
         ],
         "portsOut": [
