@@ -25,27 +25,15 @@
             },
             {
                 "type": 1,
-                "name": "START to Main"
+                "name": "START to state-1"
             },
             {
                 "type": 1,
-                "name": "Main to Gallery"
+                "name": "state-1 to Menu"
             },
             {
                 "type": 1,
-                "name": "Hallo to Haus"
-            },
-            {
-                "type": 1,
-                "name": "Haus to Main"
-            },
-            {
-                "type": 1,
-                "name": "Gallery to Haus"
-            },
-            {
-                "type": 1,
-                "name": "START to Hallo"
+                "name": "Menu to START"
             }
         ],
         "portsOut": [

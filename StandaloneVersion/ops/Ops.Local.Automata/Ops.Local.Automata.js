@@ -159,6 +159,19 @@ function getResetTargetLabel(state, counts)
         : baseLabel;
 }
 
+function getStartStateId()
+{
+    const startState = parsedData.states.find(
+        (state) => state && state.id && typeof state.label === "string" && state.label.trim() === "START"
+    );
+    return startState ? String(startState.id) : null;
+}
+
+function getDefaultResetTargetId()
+{
+    return getStartStateId() || (resetTargets[0] ? resetTargets[0].id : null);
+}
+
 function updateResetTargets()
 {
     const counts = new Map();
@@ -181,15 +194,14 @@ function updateResetTargets()
     const values = resetTargets.length
         ? resetTargets.map((target) => target.label)
         : [""];
-    const selectedLabel = typeof resetTargetIn.value === "string" ? resetTargetIn.value : "";
+    const selectedLabel = typeof resetTargetIn.get === "function" && typeof resetTargetIn.get() === "string"
+        ? resetTargetIn.get()
+        : "";
     const selectedExists = values.includes(selectedLabel);
-    const startTarget = resetTargets.find((target) =>
-    {
-        const state = parsedData.states.find((item) => item && item.id === target.id);
-        return state && typeof state.label === "string" && state.label.trim() === "START";
-    });
-    const fallbackLabel = startTarget
-        ? startTarget.label
+    const defaultTargetId = getDefaultResetTargetId();
+    const defaultTarget = resetTargets.find((target) => target.id === defaultTargetId);
+    const fallbackLabel = defaultTarget
+        ? defaultTarget.label
         : (resetTargets[0] ? resetTargets[0].label : "");
 
     resetTargetIn.setUiAttribs({ "values": values });
@@ -201,7 +213,7 @@ function getResetTargetId()
 {
     const selectedLabel = resetTargetIn.get();
     const target = resetTargets.find((item) => item.label === selectedLabel);
-    return target ? target.id : null;
+    return target ? target.id : getDefaultResetTargetId();
 }
 
 function refreshInspector()
