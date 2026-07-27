@@ -1,7 +1,23 @@
-//remove this for online version
-const konvaModule = op.require("konva");
-const Konva = konvaModule.default || konvaModule;
-//remove this for online version and add this as commonjs resource https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js
+// Resolve konva in whichever environment the op runs in, without editing this file:
+// - editor / npm: op.require("konva")
+// - exported / online: konva attached as a CDN commonjs resource that sets a global
+//   (https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js)
+const Konva = (() =>
+{
+    if (typeof op.require === "function")
+    {
+        try
+        {
+            const m = op.require("konva");
+            if (m) return m.default || m;
+        }
+        catch (e) { /* not available here, fall through to global */ }
+    }
+    return (typeof globalThis !== "undefined" && globalThis.Konva) || null;
+})();
+
+if (!Konva) op.setUiError("konva", "Konva library not found (needs the npm dependency in the editor, or a konva CDN commonjs resource in the export).");
+else op.setUiError("konva", null);
 
 const
     inStoreData = op.inString("Stored Automata Data", ""),

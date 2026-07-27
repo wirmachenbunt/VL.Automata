@@ -30,18 +30,13 @@
             },
             {
                 "type": 1,
-                "name": "transition-2",
-                "uititle": "state-2 to state-3"
+                "name": "transition-5",
+                "uititle": "state-2 to state-4"
             },
             {
                 "type": 1,
-                "name": "transition-3",
-                "uititle": "state-3 to state-1"
-            },
-            {
-                "type": 1,
-                "name": "transition-4",
-                "uititle": "START to state-3"
+                "name": "transition-6",
+                "uititle": "state-4 to state-1"
             }
         ],
         "portsOut": [
