@@ -243,37 +243,47 @@ function getRegionTitle(region)
         : String(region.id);
 }
 
+// Stable port name from the immutable region id (link key, never changes).
 function getRegionActiveOutputName(region)
 {
-    if (!region || !region.id) return null;
+    return region && region.id ? String(region.id) + "-active" : null;
+}
 
-    const baseName = getRegionTitle(region) + " Active";
+// Readable display title; disambiguated with the id only when two regions
+// share a title. Changing this never affects links.
+function getRegionActiveOutputTitle(region)
+{
+    if (!region || !region.id) return "";
+
+    const baseTitle = getRegionTitle(region) + " Active";
     const hasDuplicateTitle = parsedData.regions.some((other) =>
         other
         && other.id !== region.id
-        && (getRegionTitle(other) + " Active") === baseName
+        && (getRegionTitle(other) + " Active") === baseTitle
     );
 
-    return hasDuplicateTitle ? baseName + " (" + region.id + ")" : baseName;
+    return hasDuplicateTitle ? baseTitle + " (" + region.id + ")" : baseTitle;
 }
 
 function ensureRegionActiveOutput(region)
 {
     if (!region || !region.id) return null;
 
-    const desiredName = getRegionActiveOutputName(region);
+    const title = getRegionActiveOutputTitle(region);
     const existingEntry = regionActiveOutputs.get(region.id);
-    if (existingEntry && existingEntry.name === desiredName) return existingEntry.port;
-
     if (existingEntry && existingEntry.port)
     {
-        existingEntry.name = desiredName;
-        existingEntry.port.name = desiredName;
+        if (existingEntry.title !== title)
+        {
+            existingEntry.title = title;
+            existingEntry.port.setUiAttribs({ "title": title });
+        }
         return existingEntry.port;
     }
 
-    const port = op.outNumber(desiredName);
-    regionActiveOutputs.set(region.id, { port, name: desiredName });
+    const port = op.outNumber(getRegionActiveOutputName(region));
+    port.setUiAttribs({ "title": title });
+    regionActiveOutputs.set(region.id, { port, title });
     return port;
 }
 
@@ -372,50 +382,65 @@ function getTransitionInfos()
         .filter((t) => t && typeof t.from === "string" && typeof t.to === "string")
         .map((t) =>
         {
-            const name = getStateLabel(t.from) + " to " + getStateLabel(t.to);
+            const id = typeof t.id === "string" && t.id.trim().length > 0
+                ? t.id
+                : (t.from + "-to-" + t.to);
             return {
-                name,
+                // Port name is the immutable transition id (link key, never
+                // changes); the readable "A to B" text is only the display title,
+                // so renaming a state can't break existing connections.
+                id,
+                title: getStateLabel(t.from) + " to " + getStateLabel(t.to),
                 transition: {
-                    id: typeof t.id === "string" ? t.id : (t.from + "-to-" + t.to),
+                    id,
                     from: t.from,
                     to: t.to,
                     frames: sanitizeFrames(t.frames),
                 }
             };
         })
-        .filter((info) => info.name.trim().length > 0);
+        .filter((info) => String(info.id).trim().length > 0);
 }
 
-function ensureTrigger(name, transition)
+function ensureTrigger(id, title, transition)
 {
-    const safeName = String(name).trim();
-    if (!safeName) return;
-    if (createdTriggers.has(safeName))
+    const safeId = String(id).trim();
+    if (!safeId) return;
+
+    const existing = createdTriggers.get(safeId);
+    if (existing)
     {
-        createdTriggers.get(safeName).transition = transition;
+        existing.transition = transition;
+        if (existing.title !== title)
+        {
+            existing.title = title;
+            existing.trigger.setUiAttribs({ "title": title });
+        }
         return;
     }
-    const trigger = op.inTriggerButton(safeName);
+
+    const trigger = op.inTriggerButton(safeId);
+    trigger.setUiAttribs({ "title": title });
     trigger.onTriggered = () =>
     {
-        const entry = createdTriggers.get(safeName);
+        const entry = createdTriggers.get(safeId);
         const t = entry ? entry.transition : null;
         if (!t) return;
         if (pendingTransition) return;
         if (currentActiveStateId !== t.from) return;
         startTransition(t);
     };
-    createdTriggers.set(safeName, { trigger, transition });
+    createdTriggers.set(safeId, { trigger, transition, title });
 }
 
-function removeTrigger(name)
+function removeTrigger(id)
 {
-    const entry = createdTriggers.get(name);
+    const entry = createdTriggers.get(id);
     if (!entry) return;
     const t = entry.trigger || entry;
     if (typeof op.removePort === "function") op.removePort(t);
     else if (t && typeof t.remove === "function") t.remove();
-    createdTriggers.delete(name);
+    createdTriggers.delete(id);
 }
 
 function rebuildTriggers()
@@ -435,13 +460,13 @@ function rebuildTriggers()
     }
 
     const infos = getTransitionInfos();
-    const nameSet = new Set(infos.map((i) => i.name));
+    const idSet = new Set(infos.map((i) => i.id));
 
     Array.from(createdTriggers.keys())
-        .filter((n) => !nameSet.has(n))
+        .filter((id) => !idSet.has(id))
         .forEach(removeTrigger);
 
-    infos.forEach((info) => ensureTrigger(info.name, info.transition));
+    infos.forEach((info) => ensureTrigger(info.id, info.title, info.transition));
 
     const stillExists = currentActiveStateId
         && parsedData.states.some((s) => s && s.id === currentActiveStateId);
