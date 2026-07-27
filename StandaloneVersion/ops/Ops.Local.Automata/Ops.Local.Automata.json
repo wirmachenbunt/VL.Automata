@@ -19,25 +19,8 @@
                 "name": "Reset"
             },
             {
-                "type": 0,
-                "name": "Frame Count",
-                "subType": "integer"
-            },
-            {
                 "type": 1,
-                "name": "START to Submenu"
-            },
-            {
-                "type": 1,
-                "name": "Submenu to Pause"
-            },
-            {
-                "type": 1,
-                "name": "Pause to Main"
-            },
-            {
-                "type": 1,
-                "name": "Main to START"
+                "name": "START to state-1"
             }
         ],
         "portsOut": [

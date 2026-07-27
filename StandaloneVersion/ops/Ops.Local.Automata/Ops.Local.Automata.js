@@ -1,9 +1,7 @@
-// welcome to your new op!
-// have a look at the documentation:
-// https://cables.gl/docs/5_writing_ops/dev_ops/dev_ops
-
+//remove this for online version
 const konvaModule = op.require("konva");
 const Konva = konvaModule.default || konvaModule;
+//remove this for online version and add this as commonjs resource https://cdn.jsdelivr.net/npm/konva@10.3.0/konva.min.js
 
 const
     inStoreData = op.inString("Stored Automata Data", ""),
@@ -12,7 +10,6 @@ const
     inShow = op.inTriggerButton("Show Tab"),
     resetTargetIn = op.inDropDown("Reset Target", ["START"], "START"),
     resetIn = op.inTriggerButton("Reset"),
-    frameCountIn = op.inInt("Frame Count", 60),
     outActiveState = op.outString("Active State"),
     frameCounterOut = op.outNumber("State Frames"),
     outTransitionCountdownOut = op.outNumber("Transition Countdown"),
@@ -125,12 +122,33 @@ op.onFrame = () =>
     processPendingTransition();
 };
 
-setInterval(() =>
+const tickIntervalId = setInterval(() =>
 {
     updateFrameCounterOutput();
     updateTransitionCountdownOutput();
     processPendingTransition();
 }, 16);
+
+op.onDelete = () =>
+{
+    clearInterval(tickIntervalId);
+
+    if (konvaState)
+    {
+        if (konvaState.resizeObserver) konvaState.resizeObserver.disconnect();
+        if (konvaState.stage) konvaState.stage.destroy();
+    }
+
+    if (konvaTab && gui && gui.mainTabs && typeof gui.mainTabs.closeTab === "function")
+    {
+        gui.mainTabs.closeTab(konvaTab.id);
+    }
+
+    onActiveStateChanged = null;
+    onTransitionActivityChanged = null;
+    konvaState = null;
+    konvaTab = null;
+};
 
 function parseStoredData()
 {
@@ -198,9 +216,10 @@ function updateResetTargets()
             label: getResetTargetLabel(state, counts),
         }));
 
-    const values = resetTargets.length
-        ? resetTargets.map((target) => target.label)
-        : [""];
+    const targetLabels = resetTargets.map((target) => target.label);
+    // Dropdown needs a non-empty option list; fall back to the default "START"
+    // so we never push an empty value (which cables flags as "Invalid Value").
+    const values = targetLabels.length ? targetLabels : ["START"];
     const selectedLabel = typeof resetTargetIn.get === "function" && typeof resetTargetIn.get() === "string"
         ? resetTargetIn.get()
         : "";
@@ -210,10 +229,11 @@ function updateResetTargets()
     const fallbackLabel = defaultTarget
         ? defaultTarget.label
         : (resetTargets[0] ? resetTargets[0].label : "");
+    const nextValue = selectedExists ? selectedLabel : fallbackLabel;
 
     resetTargetIn.setUiAttribs({ "values": values });
-    resetTargetIn.set(selectedExists ? selectedLabel : fallbackLabel);
-    outStates.set(values);
+    resetTargetIn.set(values.includes(nextValue) ? nextValue : values[0]);
+    outStates.set(targetLabels);
 }
 
 function getResetTargetId()
@@ -372,6 +392,7 @@ inShow.onTriggered = addmytab;
 
 let konvaContainerId = null;
 let konvaState = null;
+let konvaTab = null;
 
 exec.onTriggered = () =>
 {
@@ -402,6 +423,7 @@ function addmytab()
     gui.maintabPanel.show(true);
 
     konvaContainerId = containerId;
+    konvaTab = tab;
     konvaState = null;
 
     const container = document.getElementById(containerId);
@@ -1973,5 +1995,5 @@ function initKonvaUI(container)
         });
         resizeObserver.observe(container);
 
-        return { stage: stage, layer: layer };
+        return { stage: stage, layer: layer, resizeObserver: resizeObserver };
 }
