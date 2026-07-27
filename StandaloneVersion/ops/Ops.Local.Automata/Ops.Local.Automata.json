@@ -21,6 +21,22 @@
             {
                 "type": 1,
                 "name": "START to state-1"
+            },
+            {
+                "type": 1,
+                "name": "START to state-2"
+            },
+            {
+                "type": 1,
+                "name": "state-2 to state-3"
+            },
+            {
+                "type": 1,
+                "name": "state-3 to state-1"
+            },
+            {
+                "type": 1,
+                "name": "START to state-3"
             }
         ],
         "portsOut": [
@@ -45,6 +61,11 @@
             {
                 "type": 3,
                 "name": "States"
+            },
+            {
+                "type": 0,
+                "name": "MainRegion Active",
+                "subType": "number"
             }
         ]
     },

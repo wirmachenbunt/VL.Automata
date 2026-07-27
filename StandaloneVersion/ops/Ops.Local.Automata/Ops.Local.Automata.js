@@ -20,14 +20,17 @@ inShow.setUiAttribs({ "hidePort": true });
 
 // --- Dynamic transition triggers (driven by inStoreData) ---
 const createdTriggers = new Map();
-let parsedData = { states: [], transitions: [] };
+let parsedData = { states: [], transitions: [], regions: [] };
 let currentActiveStateId = null;
 let onActiveStateChanged = null;
-let lastStateChangeAt = performance.now();
+let stateFrames = 0;
 let resetTargets = [];
 let currentActiveTransitionId = null;
 let onTransitionActivityChanged = null;
 let pendingTransition = null;
+// Region "active" output ports, owned at op scope (not by the editor tab) so
+// they are recreated from stored data on reload, like the transition triggers.
+const regionActiveOutputs = new Map();
 const STATE_RADIUS = 50;
 const REGION_INACTIVE_FILL = "rgba(64, 180, 255, 0.12)";
 const REGION_INACTIVE_STROKE = "rgba(64, 180, 255, 0.50)";
@@ -46,8 +49,7 @@ function getNormalizedTransitionCountdown()
 {
     if (!pendingTransition || pendingTransition.frames <= 0) return 0;
 
-    const elapsedFrames = (performance.now() - pendingTransition.startedAt) / (1000 / 60);
-    const remainingFrames = Math.max(pendingTransition.frames - elapsedFrames, 0);
+    const remainingFrames = Math.max(pendingTransition.frames - pendingTransition.elapsed, 0);
     return remainingFrames / pendingTransition.frames;
 }
 
@@ -86,53 +88,43 @@ function startTransition(transition)
         from: transition.from,
         to: transition.to,
         frames: frames,
-        startedAt: performance.now(),
+        elapsed: 0,
     };
     setActiveTransitionId(transition.id);
     updateTransitionCountdownOutput();
 }
 
-function processPendingTransition()
-{
-    if (!pendingTransition) return;
-
-    const elapsedFrames = Math.floor((performance.now() - pendingTransition.startedAt) / (1000 / 60));
-    if (elapsedFrames < pendingTransition.frames) return;
-
-    const nextStateId = pendingTransition.to;
-    pendingTransition = null;
-    setActiveTransitionId(null);
-    setActiveStateId(nextStateId);
-}
-
 function updateFrameCounterOutput()
 {
-    frameCounterOut.set(framesSinceStateChange());
+    frameCounterOut.set(stateFrames);
 }
 
-function framesSinceStateChange()
+// One simulation step, advanced exactly once per trigger (i.e. once per rendered
+// frame when this op is connected into the main loop's trigger chain). Counting
+// triggers makes "frames" an actual frame count rather than a wall-clock estimate,
+// and means the automata stops when the op is disconnected, like any other op.
+function advanceFrame()
 {
-    return Math.floor((performance.now() - lastStateChangeAt) / (1000 / 60));
+    stateFrames += 1;
+
+    if (pendingTransition)
+    {
+        pendingTransition.elapsed += 1;
+        if (pendingTransition.elapsed >= pendingTransition.frames)
+        {
+            const nextStateId = pendingTransition.to;
+            pendingTransition = null;
+            setActiveTransitionId(null);
+            setActiveStateId(nextStateId); // resets stateFrames to 0
+        }
+    }
+
+    updateFrameCounterOutput();
+    updateTransitionCountdownOutput();
 }
-
-op.onFrame = () =>
-{
-    updateFrameCounterOutput();
-    updateTransitionCountdownOutput();
-    processPendingTransition();
-};
-
-const tickIntervalId = setInterval(() =>
-{
-    updateFrameCounterOutput();
-    updateTransitionCountdownOutput();
-    processPendingTransition();
-}, 16);
 
 op.onDelete = () =>
 {
-    clearInterval(tickIntervalId);
-
     if (konvaState)
     {
         if (konvaState.resizeObserver) konvaState.resizeObserver.disconnect();
@@ -159,11 +151,12 @@ function parseStoredData()
         parsedData = {
             states: data && Array.isArray(data.states) ? data.states : [],
             transitions: data && Array.isArray(data.transitions) ? data.transitions : [],
+            regions: data && Array.isArray(data.regions) ? data.regions : [],
         };
     }
     catch (e)
     {
-        parsedData = { states: [], transitions: [] };
+        parsedData = { states: [], transitions: [], regions: [] };
     }
 }
 
@@ -243,6 +236,88 @@ function getResetTargetId()
     return target ? target.id : getDefaultResetTargetId();
 }
 
+function getRegionTitle(region)
+{
+    return typeof region.title === "string" && region.title.trim().length > 0
+        ? region.title.trim()
+        : String(region.id);
+}
+
+function getRegionActiveOutputName(region)
+{
+    if (!region || !region.id) return null;
+
+    const baseName = getRegionTitle(region) + " Active";
+    const hasDuplicateTitle = parsedData.regions.some((other) =>
+        other
+        && other.id !== region.id
+        && (getRegionTitle(other) + " Active") === baseName
+    );
+
+    return hasDuplicateTitle ? baseName + " (" + region.id + ")" : baseName;
+}
+
+function ensureRegionActiveOutput(region)
+{
+    if (!region || !region.id) return null;
+
+    const desiredName = getRegionActiveOutputName(region);
+    const existingEntry = regionActiveOutputs.get(region.id);
+    if (existingEntry && existingEntry.name === desiredName) return existingEntry.port;
+
+    if (existingEntry && existingEntry.port)
+    {
+        existingEntry.name = desiredName;
+        existingEntry.port.name = desiredName;
+        return existingEntry.port;
+    }
+
+    const port = op.outNumber(desiredName);
+    regionActiveOutputs.set(region.id, { port, name: desiredName });
+    return port;
+}
+
+function removeRegionActiveOutput(regionId)
+{
+    const entry = regionActiveOutputs.get(regionId);
+    if (!entry) return;
+
+    if (entry.port && typeof op.removePort === "function") op.removePort(entry.port);
+    regionActiveOutputs.delete(regionId);
+}
+
+function isStateInsideRegion(state, region)
+{
+    if (!state || !region) return false;
+    if (![state.x, state.y, region.x, region.y, region.radius].every(Number.isFinite)) return false;
+    const dx = state.x - region.x;
+    const dy = state.y - region.y;
+    return Math.sqrt(dx * dx + dy * dy) <= region.radius + STATE_RADIUS;
+}
+
+// Recreate/rename/remove region output ports from stored data and push their
+// current active values. Runs at op init and on every data change, so region
+// outputs exist and are correct on reload without opening the editor tab.
+function syncRegionActivityOutputs()
+{
+    const regionIds = new Set(
+        parsedData.regions.filter((region) => region && region.id).map((region) => String(region.id))
+    );
+
+    Array.from(regionActiveOutputs.keys())
+        .filter((id) => !regionIds.has(id))
+        .forEach(removeRegionActiveOutput);
+
+    const activeState = parsedData.states.find((state) => state && state.id === currentActiveStateId) || null;
+
+    parsedData.regions.forEach((region) =>
+    {
+        if (!region || !region.id) return;
+        const port = ensureRegionActiveOutput(region);
+        if (port) port.set(isStateInsideRegion(activeState, region) ? 1 : 0);
+    });
+}
+
 function refreshInspector()
 {
     if (!CABLES.UI || typeof gui !== "object" || !gui) return;
@@ -276,9 +351,10 @@ function refreshInspector()
 function setActiveStateId(id)
 {
     currentActiveStateId = id;
-    lastStateChangeAt = performance.now();
+    stateFrames = 0;
     updateFrameCounterOutput();
     outActiveState.set(id ? getStateLabel(id) : "");
+    syncRegionActivityOutputs();
     if (onActiveStateChanged) onActiveStateChanged(id);
 }
 
@@ -382,6 +458,7 @@ function rebuildTriggers()
         outActiveState.set(getStateLabel(currentActiveStateId));
     }
 
+    syncRegionActivityOutputs();
     refreshInspector();
 }
 
@@ -396,6 +473,8 @@ let konvaTab = null;
 
 exec.onTriggered = () =>
 {
+    advanceFrame();
+
     if (CABLES.UI && konvaContainerId && !konvaState)
     {
         const container = document.getElementById(konvaContainerId);
@@ -463,7 +542,6 @@ function initKonvaUI(container)
         const states = [];
         const transitions = [];
         const regions = [];
-        const regionActiveOutputs = new Map();
         let nextTransitionId = 0;
         let nextRegionId = 0;
         let activeStateId = null;
@@ -635,7 +713,6 @@ function initKonvaUI(container)
                 const regionTitleNode = regionLayer.findOne("#" + region.id + "-title");
                 if (regionNode) regionNode.destroy();
                 if (regionTitleNode) regionTitleNode.destroy();
-                removeRegionActiveOutput(region.id);
             });
             states.forEach((state) =>
             {
@@ -849,7 +926,7 @@ function initKonvaUI(container)
                     label.offsetY(label.height() / 2);
                 }
             });
-            syncRegionActivityOutputs();
+            syncRegionActivityAppearance();
             transitions.forEach((transition) =>
             {
                 const line = layer.findOne("#" + transition.id);
@@ -1223,59 +1300,7 @@ function initKonvaUI(container)
 
             regionLayer.add(circle);
             regionLayer.add(titleText);
-            ensureRegionActiveOutput(region);
             regionLayer.batchDraw();
-        }
-
-        function getRegionActiveOutputName(region)
-        {
-            if (!region || !region.id) return null;
-
-            const baseTitle = typeof region.title === "string" && region.title.trim().length > 0
-                ? region.title.trim()
-                : region.id;
-            const baseName = baseTitle + " Active";
-            const hasDuplicateTitle = regions.some((otherRegion) =>
-                otherRegion
-                && otherRegion.id !== region.id
-                && ((typeof otherRegion.title === "string" && otherRegion.title.trim().length > 0
-                    ? otherRegion.title.trim()
-                    : otherRegion.id) + " Active") === baseName
-            );
-
-            return hasDuplicateTitle ? baseName + " (" + region.id + ")" : baseName;
-        }
-
-        function ensureRegionActiveOutput(region)
-        {
-            if (!region || !region.id) return null;
-
-            const desiredName = getRegionActiveOutputName(region);
-            const existingEntry = regionActiveOutputs.get(region.id);
-            if (existingEntry && existingEntry.name === desiredName) return existingEntry.port;
-
-            if (existingEntry && existingEntry.port)
-            {
-                existingEntry.name = desiredName;
-                existingEntry.port.name = desiredName;
-                return existingEntry.port;
-            }
-
-            const port = op.outNumber(desiredName);
-            regionActiveOutputs.set(region.id, { port, name: desiredName });
-            return port;
-        }
-
-        function removeRegionActiveOutput(regionId)
-        {
-            const entry = regionActiveOutputs.get(regionId);
-            if (!entry) return;
-
-            if (entry.port && typeof op.removePort === "function")
-            {
-                op.removePort(entry.port);
-            }
-            regionActiveOutputs.delete(regionId);
         }
 
         function isStateInsideRegion(state, region)
@@ -1305,7 +1330,10 @@ function initKonvaUI(container)
             }
         }
 
-        function syncRegionActivityOutputs()
+        // Visual only: the output ports are owned/updated at op scope
+        // (see module-level syncRegionActivityOutputs), driven from stored data
+        // so they survive reloads without the editor tab being open.
+        function syncRegionActivityAppearance()
         {
             const activeState = states.find((state) => state.id === activeStateId) || null;
 
@@ -1313,9 +1341,6 @@ function initKonvaUI(container)
             {
                 const isActive = !!(activeState && isStateInsideRegion(activeState, region));
                 region.active = isActive;
-
-                const port = ensureRegionActiveOutput(region);
-                if (port) port.set(isActive ? 1 : 0);
                 updateRegionAppearance(region, isActive);
             });
 
@@ -1384,7 +1409,7 @@ function initKonvaUI(container)
                 label.offsetY(label.height() / 2);
                 cleanup();
                 regionLayer.batchDraw();
-                syncRegionActivityOutputs();
+                syncRegionActivityAppearance();
                 saveState();
             };
 
@@ -1415,9 +1440,8 @@ function initKonvaUI(container)
             const title = regionLayer.findOne("#" + regionId + "-title");
             if (circle) circle.destroy();
             if (title) title.destroy();
-            removeRegionActiveOutput(regionId);
             regionLayer.batchDraw();
-            syncRegionActivityOutputs();
+            syncRegionActivityAppearance();
             saveState();
         }
 
@@ -1808,7 +1832,7 @@ function initKonvaUI(container)
                 const radius = Math.max(MIN_REGION_RADIUS, Math.sqrt(dx * dx + dy * dy));
                 regionResizeTarget.regionObj.radius = radius;
                 if (regionResizeTarget.circle) regionResizeTarget.circle.radius(radius);
-                    syncRegionActivityOutputs();
+                    syncRegionActivityAppearance();
                 container.style.cursor = "nwse-resize";
                 return;
             }
@@ -1831,7 +1855,7 @@ function initKonvaUI(container)
                     regionDragTarget.title.y(nextY);
                 }
 
-                    syncRegionActivityOutputs();
+                    syncRegionActivityAppearance();
                 container.style.cursor = "grabbing";
                 return;
             }
@@ -1890,7 +1914,7 @@ function initKonvaUI(container)
                     nextRegionId += 1;
                     regions.push(region);
                     createRegion(region);
-                    syncRegionActivityOutputs();
+                    syncRegionActivityAppearance();
                     didCreateRegion = true;
                 }
 
@@ -1898,7 +1922,7 @@ function initKonvaUI(container)
                 regionCreationActive = false;
                 regionDraftCircle.visible(false);
                 regionDraftCircle.radius(0);
-                syncRegionActivityOutputs();
+                syncRegionActivityAppearance();
             }
 
             if (dragTarget) saveState();
