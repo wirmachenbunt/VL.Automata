@@ -703,6 +703,8 @@ function initKonvaUI(container)
             updateActiveStateOutput();
         }
 
+        // ===================== Serialization & clipboard import/export =====================
+
         function saveState()
         {
             var snapshot = {
@@ -889,6 +891,8 @@ function initKonvaUI(container)
             return state ? state.label || state.id : stateId;
         }
 
+        // ===================== Geometry & rendering (sync Konva nodes to data) =====================
+
         function getTransitionPoints(from, to)
         {
             const dx = to.x - from.x;
@@ -1051,42 +1055,49 @@ function initKonvaUI(container)
             layer.batchDraw();
         }
 
-        function startEditingStateLabel(state, label)
-        {
-            if (activeLabelEditor)
-            {
-                activeLabelEditor.remove();
-                activeLabelEditor = null;
-            }
+        // ===================== Inline text editors (on-canvas <input>) =====================
 
-            const stageBox = stage.container().getBoundingClientRect();
-            const labelPosition = label.getAbsolutePosition();
-            const inputWidth = Math.max(label.width(), 100);
-            const inputHeight = label.height() + 20;
-            const posX = labelPosition.x - inputWidth / 2;
-            const posY = labelPosition.y - inputHeight / 2;
+        // Remove the currently open inline <input> editor, if any.
+        function closeActiveLabelEditor()
+        {
+            if (activeLabelEditor && activeLabelEditor.parentNode) activeLabelEditor.remove();
+            activeLabelEditor = null;
+        }
+
+        // Shared factory for the on-canvas inline editors (state label, transition
+        // frames, region title). `opts.x`/`opts.y` are the editor's centre in page
+        // coords; `opts.onCommit(rawValue)` receives the raw input string on
+        // Enter/blur. Escape cancels without committing.
+        function createInlineEditor(opts)
+        {
+            closeActiveLabelEditor();
 
             const input = document.createElement("input");
-            input.type = "text";
-            input.value = state.label || label.text();
-            input.style.position = "absolute";
-            input.style.top = posY + "px";
-            input.style.left = posX + "px";
-            input.style.width = inputWidth + "px";
-            input.style.height = inputHeight + "px";
-            input.style.fontSize = label.fontSize() + "px";
-            input.style.fontFamily = label.fontFamily();
-            input.style.color = label.fill();
-            input.style.background = "rgba(0,0,0,0.6)";
-            input.style.border = "1px solid #4aa3ff";
-            input.style.padding = "10px";
-            input.style.margin = "0";
-            input.style.textAlign = "center";
-            input.style.outline = "none";
-            input.style.boxSizing = "border-box";
-            input.style.zIndex = "9999";
+            input.type = opts.type || "text";
+            if (opts.min !== undefined) input.min = opts.min;
+            if (opts.step !== undefined) input.step = opts.step;
+            input.value = opts.value;
 
-            // Append to the Konva container (which has relative positioning via Konva)
+            Object.assign(input.style, {
+                "position": "absolute",
+                "left": (opts.x - opts.width / 2) + "px",
+                "top": (opts.y - opts.height / 2) + "px",
+                "width": opts.width + "px",
+                "height": opts.height + "px",
+                "fontSize": opts.fontSize + "px",
+                "fontFamily": opts.fontFamily,
+                "color": opts.color,
+                "background": opts.background,
+                "border": "1px solid #4aa3ff",
+                "padding": (opts.padding || 10) + "px",
+                "margin": "0",
+                "textAlign": "center",
+                "outline": "none",
+                "boxSizing": "border-box",
+                "zIndex": "9999",
+            });
+
+            // Container has relative positioning via Konva, so absolute works here.
             container.style.position = "relative";
             container.appendChild(input);
             input.focus();
@@ -1094,127 +1105,79 @@ function initKonvaUI(container)
             activeLabelEditor = input;
 
             let committed = false;
-
-            const cleanup = () =>
-            {
-                if (activeLabelEditor && activeLabelEditor.parentNode)
-                {
-                    activeLabelEditor.remove();
-                }
-                activeLabelEditor = null;
-            };
-
             const commit = () =>
             {
                 if (committed) return;
                 committed = true;
-                const newText = input.value.trim();
-                state.label = newText ? newText : state.label;
-                label.text(state.label || state.id);
-                cleanup();
-                updateActiveStateOutput();
-                updateObjects();
-                layer.batchDraw();
-                saveState();
+                const value = input.value;
+                closeActiveLabelEditor();
+                opts.onCommit(value);
             };
 
             input.addEventListener("keydown", (event) =>
             {
-                if (event.key === "Enter")
-                {
-                    event.preventDefault();
-                    commit();
-                }
-                else if (event.key === "Escape")
-                {
-                    event.preventDefault();
-                    cleanup();
-                }
+                if (event.key === "Enter") { event.preventDefault(); commit(); }
+                else if (event.key === "Escape") { event.preventDefault(); closeActiveLabelEditor(); }
             });
-
             input.addEventListener("blur", () => { commit(); });
+        }
+
+        function startEditingStateLabel(state, label)
+        {
+            const pos = label.getAbsolutePosition();
+            createInlineEditor({
+                "x": pos.x,
+                "y": pos.y,
+                "width": Math.max(label.width(), 100),
+                "height": label.height() + 20,
+                "type": "text",
+                "value": state.label || label.text(),
+                "fontSize": label.fontSize(),
+                "fontFamily": label.fontFamily(),
+                "color": label.fill(),
+                "background": "rgba(0,0,0,0.6)",
+                "padding": 10,
+                "onCommit": (value) =>
+                {
+                    const newText = value.trim();
+                    state.label = newText ? newText : state.label;
+                    label.text(state.label || state.id);
+                    updateActiveStateOutput();
+                    updateObjects();
+                    layer.batchDraw();
+                    saveState();
+                },
+            });
         }
 
         function startEditingTransitionFrames(transition, label, labelText)
         {
-            if (activeLabelEditor)
-            {
-                activeLabelEditor.remove();
-                activeLabelEditor = null;
-            }
-
-            const labelPosition = label.getAbsolutePosition();
-            const inputWidth = Math.max(labelText.width() + 40, 140);
-            const inputHeight = Math.max(labelText.height() + 26, 44);
-            const posX = labelPosition.x - inputWidth / 2;
-            const posY = labelPosition.y - inputHeight / 2;
-
-            const input = document.createElement("input");
-            input.type = "number";
-            input.min = "0";
-            input.step = "1";
-            input.value = String(sanitizeFrames(transition.frames));
-            input.style.position = "absolute";
-            input.style.top = posY + "px";
-            input.style.left = posX + "px";
-            input.style.width = inputWidth + "px";
-            input.style.height = inputHeight + "px";
-            input.style.fontSize = Math.max(labelText.fontSize() + 4, 18) + "px";
-            input.style.fontFamily = labelText.fontFamily();
-            input.style.color = labelText.fill();
-            input.style.background = "rgba(20,20,20,1)";
-            input.style.border = "1px solid #4aa3ff";
-            input.style.padding = "12px";
-            input.style.margin = "0";
-            input.style.textAlign = "center";
-            input.style.outline = "none";
-            input.style.boxSizing = "border-box";
-            input.style.zIndex = "9999";
-
-            container.style.position = "relative";
-            container.appendChild(input);
-            input.focus();
-            input.select();
-            activeLabelEditor = input;
-
-            let committed = false;
-
-            const cleanup = () =>
-            {
-                if (activeLabelEditor && activeLabelEditor.parentNode)
+            const pos = label.getAbsolutePosition();
+            createInlineEditor({
+                "x": pos.x,
+                "y": pos.y,
+                "width": Math.max(labelText.width() + 40, 140),
+                "height": Math.max(labelText.height() + 26, 44),
+                "type": "number",
+                "min": "0",
+                "step": "1",
+                "value": String(sanitizeFrames(transition.frames)),
+                "fontSize": Math.max(labelText.fontSize() + 4, 18),
+                "fontFamily": labelText.fontFamily(),
+                "color": labelText.fill(),
+                "background": "rgba(20,20,20,1)",
+                "padding": 12,
+                "onCommit": (value) =>
                 {
-                    activeLabelEditor.remove();
-                }
-                activeLabelEditor = null;
-            };
-
-            const commit = () =>
-            {
-                if (committed) return;
-                committed = true;
-                transition.frames = sanitizeFrames(input.value);
-                cleanup();
-                updateObjects();
-                layer.batchDraw();
-                saveState();
-            };
-
-            input.addEventListener("keydown", (event) =>
-            {
-                if (event.key === "Enter")
-                {
-                    event.preventDefault();
-                    commit();
-                }
-                else if (event.key === "Escape")
-                {
-                    event.preventDefault();
-                    cleanup();
-                }
+                    transition.frames = sanitizeFrames(value);
+                    updateObjects();
+                    layer.batchDraw();
+                    saveState();
+                },
             });
-
-            input.addEventListener("blur", () => { commit(); });
         }
+
+        // ===================== Node builders & CRUD (transitions / regions / states) =====================
 
         function createTransition(transition)
         {
@@ -1393,85 +1356,31 @@ function initKonvaUI(container)
 
         function startEditingRegionTitle(region, label)
         {
-            if (activeLabelEditor)
-            {
-                activeLabelEditor.remove();
-                activeLabelEditor = null;
-            }
-
-            const labelPosition = label.getAbsolutePosition();
-            const inputWidth = Math.max(label.width() + 40, 140);
-            const inputHeight = Math.max(label.height() + 24, 42);
-            const posX = labelPosition.x - inputWidth / 2;
-            const posY = labelPosition.y - inputHeight / 2;
-
-            const input = document.createElement("input");
-            input.type = "text";
-            input.value = region.title || label.text() || "";
-            input.style.position = "absolute";
-            input.style.top = posY + "px";
-            input.style.left = posX + "px";
-            input.style.width = inputWidth + "px";
-            input.style.height = inputHeight + "px";
-            input.style.fontSize = Math.max(label.fontSize() + 2, 16) + "px";
-            input.style.fontFamily = label.fontFamily();
-            input.style.color = "#eaf7ff";
-            input.style.background = "rgba(20,20,20,0.95)";
-            input.style.border = "1px solid #4aa3ff";
-            input.style.padding = "10px";
-            input.style.margin = "0";
-            input.style.textAlign = "center";
-            input.style.outline = "none";
-            input.style.boxSizing = "border-box";
-            input.style.zIndex = "9999";
-
-            container.style.position = "relative";
-            container.appendChild(input);
-            input.focus();
-            input.select();
-            activeLabelEditor = input;
-
-            let committed = false;
-
-            const cleanup = () =>
-            {
-                if (activeLabelEditor && activeLabelEditor.parentNode)
+            const pos = label.getAbsolutePosition();
+            createInlineEditor({
+                "x": pos.x,
+                "y": pos.y,
+                "width": Math.max(label.width() + 40, 140),
+                "height": Math.max(label.height() + 24, 42),
+                "type": "text",
+                "value": region.title || label.text() || "",
+                "fontSize": Math.max(label.fontSize() + 2, 16),
+                "fontFamily": label.fontFamily(),
+                "color": "#eaf7ff",
+                "background": "rgba(20,20,20,0.95)",
+                "padding": 10,
+                "onCommit": (value) =>
                 {
-                    activeLabelEditor.remove();
-                }
-                activeLabelEditor = null;
-            };
-
-            const commit = () =>
-            {
-                if (committed) return;
-                committed = true;
-                const newTitle = input.value.trim();
-                region.title = newTitle || region.title || "Region";
-                label.text(region.title);
-                label.offsetX(label.width() / 2);
-                label.offsetY(label.height() / 2);
-                cleanup();
-                regionLayer.batchDraw();
-                syncRegionActivityAppearance();
-                saveState();
-            };
-
-            input.addEventListener("keydown", (event) =>
-            {
-                if (event.key === "Enter")
-                {
-                    event.preventDefault();
-                    commit();
-                }
-                else if (event.key === "Escape")
-                {
-                    event.preventDefault();
-                    cleanup();
-                }
+                    const newTitle = value.trim();
+                    region.title = newTitle || region.title || "Region";
+                    label.text(region.title);
+                    label.offsetX(label.width() / 2);
+                    label.offsetY(label.height() / 2);
+                    regionLayer.batchDraw();
+                    syncRegionActivityAppearance();
+                    saveState();
+                },
             });
-
-            input.addEventListener("blur", () => { commit(); });
         }
 
         function removeRegion(regionId)
@@ -1696,6 +1605,8 @@ function initKonvaUI(container)
         let regionResizeTarget = null; // { regionObj, circle }
         let canvasDrag = false;
         let canvasDragStart = null;
+
+        // ===================== Interaction: mouse, keyboard, viewport =====================
 
         stage.on("mousedown", (e) =>
         {
