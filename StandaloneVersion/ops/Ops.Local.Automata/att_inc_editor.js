@@ -1198,7 +1198,9 @@ function initKonvaUI(container)
                     return;
                 }
 
-                if (!shape && !e.evt.altKey && !e.evt.ctrlKey && !e.evt.metaKey && !e.evt.shiftKey)
+                // Alt + drag on empty space starts a new region (plain drag does
+                // nothing, so regions aren't created by accident).
+                if (!shape && e.evt.altKey && !e.evt.ctrlKey && !e.evt.metaKey && !e.evt.shiftKey)
                 {
                     regionDraftStart = { x: stagePoint.x, y: stagePoint.y };
                     regionCreationActive = true;
@@ -1459,7 +1461,7 @@ function initKonvaUI(container)
                     ["Delete", "Alt-click (or middle-click)"],
                 ]],
                 ["Regions", [
-                    ["Create", "drag on empty space"],
+                    ["Create", "Alt-drag on empty space"],
                     ["Move", "drag its title"],
                     ["Resize", "drag its edge"],
                     ["Rename", "double-click it"],
