@@ -1272,10 +1272,13 @@ function initKonvaUI(container)
                 {
                     event.evt.preventDefault();
                     event.cancelBubble = true;
-                    if (!pendingTransition && currentActiveStateId === transition.from)
-                    {
-                        startTransition(transition);
-                    }
+                    // Editor force-trigger: run this transition regardless of the
+                    // current state — cancel any pending one, jump to its "from"
+                    // state, then start it. Only this ctrl+click shortcut behaves
+                    // this way; the normal trigger ports stay gated to "from".
+                    cancelPendingTransition();
+                    if (currentActiveStateId !== transition.from) setActiveStateId(transition.from);
+                    startTransition(transition);
                     return;
                 }
 
