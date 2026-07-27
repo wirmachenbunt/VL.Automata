@@ -1521,7 +1521,7 @@ function initKonvaUI(container)
             panel.appendChild(body);
             host.appendChild(panel);
 
-            let open = true;
+            let open = false;
             const apply = () =>
             {
                 body.style.display = open ? "block" : "none";

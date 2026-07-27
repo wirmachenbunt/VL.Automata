@@ -23,7 +23,7 @@ const
     inStoreData = op.inString("Stored Automata Data", ""),
     exec = op.inTrigger("Trigger"),
     next = op.outTrigger("Next"),
-    inShow = op.inTriggerButton("Show Tab"),
+    inShow = op.inTriggerButton("Show Editor"),
     resetTargetIn = op.inDropDown("Reset Target", ["START"], "START"),
     resetIn = op.inTriggerButton("Reset"),
     outActiveState = op.outString("Active State"),
@@ -36,7 +36,7 @@ inShow.setUiAttribs({ "hidePort": true });
 
 // --- Dynamic transition triggers (driven by inStoreData) ---
 const createdTriggers = new Map();
-let parsedData = { states: [], transitions: [], regions: [] };
+let parsedData = { "states": [], "transitions": [], "regions": [] };
 let currentActiveStateId = null;
 let onActiveStateChanged = null;
 let stateFrames = 0;
@@ -100,11 +100,11 @@ function startTransition(transition)
     }
 
     pendingTransition = {
-        id: transition.id,
-        from: transition.from,
-        to: transition.to,
-        frames: frames,
-        elapsed: 0,
+        "id": transition.id,
+        "from": transition.from,
+        "to": transition.to,
+        "frames": frames,
+        "elapsed": 0
     };
     setActiveTransitionId(transition.id);
     updateTransitionCountdownOutput();
@@ -165,38 +165,38 @@ function parseStoredData()
         const stored = inStoreData.get();
         const data = stored ? JSON.parse(stored) : null;
         parsedData = {
-            states: data && Array.isArray(data.states) ? data.states : [],
-            transitions: data && Array.isArray(data.transitions) ? data.transitions : [],
-            regions: data && Array.isArray(data.regions) ? data.regions : [],
+            "states": data && Array.isArray(data.states) ? data.states : [],
+            "transitions": data && Array.isArray(data.transitions) ? data.transitions : [],
+            "regions": data && Array.isArray(data.regions) ? data.regions : []
         };
     }
     catch (e)
     {
-        parsedData = { states: [], transitions: [], regions: [] };
+        parsedData = { "states": [], "transitions": [], "regions": [] };
     }
 }
 
 function getStateLabel(id)
 {
-    const s = parsedData.states.find((x) => x && x.id === id);
+    const s = parsedData.states.find((x) => { return x && x.id === id; });
     return s && typeof s.label === "string" && s.label.trim().length > 0 ? s.label : id;
 }
 
 function getResetTargetLabel(state, counts)
 {
-    const baseLabel = state && typeof state.label === "string" && state.label.trim().length > 0
-        ? state.label.trim()
-        : String(state.id);
+    const baseLabel = state && typeof state.label === "string" && state.label.trim().length > 0 ?
+        state.label.trim() :
+        String(state.id);
 
-    return counts.get(baseLabel) > 1
-        ? baseLabel + " (" + state.id + ")"
-        : baseLabel;
+    return counts.get(baseLabel) > 1 ?
+        baseLabel + " (" + state.id + ")" :
+        baseLabel;
 }
 
 function getStartStateId()
 {
     const startState = parsedData.states.find(
-        (state) => state && state.id && typeof state.label === "string" && state.label.trim() === "START"
+        (state) => { return state && state.id && typeof state.label === "string" && state.label.trim() === "START"; }
     );
     return startState ? String(startState.id) : null;
 }
@@ -212,32 +212,35 @@ function updateResetTargets()
     parsedData.states.forEach((state) =>
     {
         if (!state || !state.id) return;
-        const baseLabel = typeof state.label === "string" && state.label.trim().length > 0
-            ? state.label.trim()
-            : String(state.id);
+        const baseLabel = typeof state.label === "string" && state.label.trim().length > 0 ?
+            state.label.trim() :
+            String(state.id);
         counts.set(baseLabel, (counts.get(baseLabel) || 0) + 1);
     });
 
     resetTargets = parsedData.states
-        .filter((state) => state && state.id)
-        .map((state) => ({
-            id: String(state.id),
-            label: getResetTargetLabel(state, counts),
-        }));
+        .filter((state) => { return state && state.id; })
+        .map((state) =>
+        {
+            return {
+                "id": String(state.id),
+                "label": getResetTargetLabel(state, counts)
+            };
+        });
 
-    const targetLabels = resetTargets.map((target) => target.label);
+    const targetLabels = resetTargets.map((target) => { return target.label; });
     // Dropdown needs a non-empty option list; fall back to the default "START"
     // so we never push an empty value (which cables flags as "Invalid Value").
     const values = targetLabels.length ? targetLabels : ["START"];
-    const selectedLabel = typeof resetTargetIn.get === "function" && typeof resetTargetIn.get() === "string"
-        ? resetTargetIn.get()
-        : "";
+    const selectedLabel = typeof resetTargetIn.get === "function" && typeof resetTargetIn.get() === "string" ?
+        resetTargetIn.get() :
+        "";
     const selectedExists = values.includes(selectedLabel);
     const defaultTargetId = getDefaultResetTargetId();
-    const defaultTarget = resetTargets.find((target) => target.id === defaultTargetId);
-    const fallbackLabel = defaultTarget
-        ? defaultTarget.label
-        : (resetTargets[0] ? resetTargets[0].label : "");
+    const defaultTarget = resetTargets.find((target) => { return target.id === defaultTargetId; });
+    const fallbackLabel = defaultTarget ?
+        defaultTarget.label :
+        (resetTargets[0] ? resetTargets[0].label : "");
     const nextValue = selectedExists ? selectedLabel : fallbackLabel;
 
     resetTargetIn.setUiAttribs({ "values": values });
@@ -248,15 +251,15 @@ function updateResetTargets()
 function getResetTargetId()
 {
     const selectedLabel = resetTargetIn.get();
-    const target = resetTargets.find((item) => item.label === selectedLabel);
+    const target = resetTargets.find((item) => { return item.label === selectedLabel; });
     return target ? target.id : getDefaultResetTargetId();
 }
 
 function getRegionTitle(region)
 {
-    return typeof region.title === "string" && region.title.trim().length > 0
-        ? region.title.trim()
-        : String(region.id);
+    return typeof region.title === "string" && region.title.trim().length > 0 ?
+        region.title.trim() :
+        String(region.id);
 }
 
 // Stable port name from the immutable region id (link key, never changes).
@@ -273,9 +276,11 @@ function getRegionActiveOutputTitle(region)
 
     const baseTitle = getRegionTitle(region) + " Active";
     const hasDuplicateTitle = parsedData.regions.some((other) =>
-        other
-        && other.id !== region.id
-        && (getRegionTitle(other) + " Active") === baseTitle
+    {
+        return other &&
+        other.id !== region.id &&
+        (getRegionTitle(other) + " Active") === baseTitle;
+    }
     );
 
     return hasDuplicateTitle ? baseTitle + " (" + region.id + ")" : baseTitle;
@@ -299,7 +304,7 @@ function ensureRegionActiveOutput(region)
 
     const port = op.outNumber(getRegionActiveOutputName(region));
     port.setUiAttribs({ "title": title });
-    regionActiveOutputs.set(region.id, { port, title });
+    regionActiveOutputs.set(region.id, { "port": port, "title": title });
     return port;
 }
 
@@ -327,14 +332,14 @@ function isStateInsideRegion(state, region)
 function syncRegionActivityOutputs()
 {
     const regionIds = new Set(
-        parsedData.regions.filter((region) => region && region.id).map((region) => String(region.id))
+        parsedData.regions.filter((region) => { return region && region.id; }).map((region) => { return String(region.id); })
     );
 
     Array.from(regionActiveOutputs.keys())
-        .filter((id) => !regionIds.has(id))
+        .filter((id) => { return !regionIds.has(id); })
         .forEach(removeRegionActiveOutput);
 
-    const activeState = parsedData.states.find((state) => state && state.id === currentActiveStateId) || null;
+    const activeState = parsedData.states.find((state) => { return state && state.id === currentActiveStateId; }) || null;
 
     parsedData.regions.forEach((region) =>
     {
@@ -348,11 +353,11 @@ function refreshInspector()
 {
     if (!CABLES.UI || typeof gui !== "object" || !gui) return;
 
-    const selectedOp = gui.patchView && typeof gui.patchView.getSelectedOp === "function"
-        ? gui.patchView.getSelectedOp()
-        : gui.opParams && gui.opParams.op
-            ? gui.opParams.op
-            : null;
+    const selectedOp = gui.patchView && typeof gui.patchView.getSelectedOp === "function" ?
+        gui.patchView.getSelectedOp() :
+        gui.opParams && gui.opParams.op ?
+            gui.opParams.op :
+            null;
 
     if (selectedOp !== op) return;
 
@@ -395,27 +400,28 @@ resetIn.onTriggered = () =>
 function getTransitionInfos()
 {
     return parsedData.transitions
-        .filter((t) => t && typeof t.from === "string" && typeof t.to === "string")
+        .filter((t) => { return t && typeof t.from === "string" && typeof t.to === "string"; })
         .map((t) =>
         {
-            const id = typeof t.id === "string" && t.id.trim().length > 0
-                ? t.id
-                : (t.from + "-to-" + t.to);
+            const id = typeof t.id === "string" && t.id.trim().length > 0 ?
+                t.id :
+                (t.from + "-to-" + t.to);
             return {
                 // Port name is the immutable transition id (link key, never
                 // changes); the readable "A to B" text is only the display title,
                 // so renaming a state can't break existing connections.
-                id,
-                title: getStateLabel(t.from) + " to " + getStateLabel(t.to),
-                transition: {
-                    id,
-                    from: t.from,
-                    to: t.to,
-                    frames: sanitizeFrames(t.frames),
+                "id": id,
+                "title": getStateLabel(t.from) + " to " + getStateLabel(t.to),
+                "transition":
+                {
+                    "id": id,
+                    "from": t.from,
+                    "to": t.to,
+                    "frames": sanitizeFrames(t.frames)
                 }
             };
         })
-        .filter((info) => String(info.id).trim().length > 0);
+        .filter((info) => { return String(info.id).trim().length > 0; });
 }
 
 function ensureTrigger(id, title, transition)
@@ -446,7 +452,7 @@ function ensureTrigger(id, title, transition)
         if (currentActiveStateId !== t.from) return;
         startTransition(t);
     };
-    createdTriggers.set(safeId, { trigger, transition, title });
+    createdTriggers.set(safeId, { "trigger": trigger, "transition": transition, "title": title });
 }
 
 function removeTrigger(id)
@@ -467,29 +473,31 @@ function rebuildTriggers()
     if (pendingTransition)
     {
         const stillValid = parsedData.transitions.some((t) =>
-            t
-            && String(t.id) === pendingTransition.id
-            && String(t.from) === pendingTransition.from
-            && String(t.to) === pendingTransition.to
+        {
+            return t &&
+            String(t.id) === pendingTransition.id &&
+            String(t.from) === pendingTransition.from &&
+            String(t.to) === pendingTransition.to;
+        }
         );
         if (!stillValid) cancelPendingTransition();
     }
 
     const infos = getTransitionInfos();
-    const idSet = new Set(infos.map((i) => i.id));
+    const idSet = new Set(infos.map((i) => { return i.id; }));
 
     Array.from(createdTriggers.keys())
-        .filter((id) => !idSet.has(id))
+        .filter((id) => { return !idSet.has(id); })
         .forEach(removeTrigger);
 
-    infos.forEach((info) => ensureTrigger(info.id, info.title, info.transition));
+    infos.forEach((info) => { return ensureTrigger(info.id, info.title, info.transition); });
 
-    const stillExists = currentActiveStateId
-        && parsedData.states.some((s) => s && s.id === currentActiveStateId);
+    const stillExists = currentActiveStateId &&
+        parsedData.states.some((s) => { return s && s.id === currentActiveStateId; });
     if (!stillExists)
     {
         const start = parsedData.states.find(
-            (s) => s && typeof s.label === "string" && s.label.trim() === "START"
+            (s) => { return s && typeof s.label === "string" && s.label.trim() === "START"; }
         );
         const fallback = start || parsedData.states[0] || null;
         setActiveStateId(fallback ? fallback.id : null);
@@ -533,10 +541,10 @@ function addmytab()
 {
     if (!CABLES.UI) return;
 
-    var containerId = "konva-container-" + op.id;
-    var tabName = "Automata " + op.id.substring(0, 6);
-    var html = '<div id="' + containerId + '" style="width:100%;height:100%;overflow:hidden;"></div>';
-    var tab = new CABLES.UI.Tab(tabName, { "icon": "cube", "infotext": "tab_gltf", "padding": false, "singleton": true });
+    let containerId = "konva-container-" + op.id;
+    let tabName = "Automata " + op.id.substring(0, 6);
+    let html = "<div id=\"" + containerId + "\" style=\"width:100%;height:100%;overflow:hidden;\"></div>";
+    let tab = new CABLES.UI.Tab(tabName, { "icon": "cube", "infotext": "tab_gltf", "padding": false, "singleton": true });
 
     gui.mainTabs.addTab(tab, true);
     tab.html(html);
