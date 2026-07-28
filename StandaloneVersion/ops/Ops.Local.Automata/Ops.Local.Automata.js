@@ -27,6 +27,7 @@ const
     resetTargetIn = op.inDropDown("Reset Target", ["START"], "START"),
     resetIn = op.inTriggerButton("Reset"),
     outActiveState = op.outString("Active State"),
+    outNextState = op.outString("Next State"),
     frameCounterOut = op.outNumber("State Frames"),
     outTransitionCountdownOut = op.outNumber("Transition Countdown"),
     outStates = op.outArray("States");
@@ -74,6 +75,13 @@ function updateTransitionCountdownOutput()
     outTransitionCountdownOut.set(getNormalizedTransitionCountdown());
 }
 
+// The state a pending (multi-frame) transition is heading to, so downstream can
+// see what's about to become active. Empty when no transition is in progress.
+function updateNextStateOutput()
+{
+    outNextState.set(pendingTransition ? getStateLabel(pendingTransition.to) : "");
+}
+
 function setActiveTransitionId(id)
 {
     currentActiveTransitionId = id || null;
@@ -85,6 +93,7 @@ function cancelPendingTransition()
     pendingTransition = null;
     setActiveTransitionId(null);
     updateTransitionCountdownOutput();
+    updateNextStateOutput();
 }
 
 function startTransition(transition)
@@ -108,6 +117,7 @@ function startTransition(transition)
     };
     setActiveTransitionId(transition.id);
     updateTransitionCountdownOutput();
+    updateNextStateOutput();
 }
 
 function updateFrameCounterOutput()
@@ -137,6 +147,7 @@ function advanceFrame()
 
     updateFrameCounterOutput();
     updateTransitionCountdownOutput();
+    updateNextStateOutput();
 }
 
 op.onDelete = () =>
