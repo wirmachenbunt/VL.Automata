@@ -1,0 +1,16 @@
+{
+  "states": [
+    { "id": "s0", "label": "START", "x": 140, "y": 200 },
+    { "id": "s1", "label": "state-1", "x": 360, "y": 120 },
+    { "id": "s2", "label": "state-2", "x": 360, "y": 300 }
+  ],
+  "transitions": [
+    { "id": "t0", "from": "s0", "to": "s1", "frames": 0 },
+    { "id": "t1", "from": "s0", "to": "s2", "frames": 0 },
+    { "id": "t2", "from": "s1", "to": "s2", "frames": 60 },
+    { "id": "t3", "from": "s2", "to": "s0", "frames": 0 }
+  ],
+  "regions": [
+    { "id": "r0", "x": 360, "y": 300, "radius": 90, "title": "MainRegion" }
+  ]
+}

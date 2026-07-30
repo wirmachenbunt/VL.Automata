@@ -1,0 +1,14 @@
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Debug\net8.0-windows\VL.Automata.deps.json
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Debug\net8.0-windows\VL.Automata.dll
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Debug\net8.0-windows\VL.Automata.pdb
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Debug\net8.0-windows\VL.Automata.xml
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.csproj.AssemblyReference.cache
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.GeneratedMSBuildEditorConfig.editorconfig
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.AssemblyInfoInputs.cache
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.AssemblyInfo.cs
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.csproj.CoreCompileInputs.cache
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.dll
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\refint\VL.Automata.dll
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.xml
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\VL.Automata.pdb
+C:\Mac\Home\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Debug\net8.0-windows\ref\VL.Automata.dll

@@ -1,0 +1,14 @@
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\bin\Debug\net8.0\automata_testbedUtils.deps.json
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\bin\Debug\net8.0\automata_testbedUtils.dll
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\bin\Debug\net8.0\automata_testbedUtils.pdb
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\bin\Debug\net8.0\automata_testbedUtils.xml
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.csproj.AssemblyReference.cache
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.GeneratedMSBuildEditorConfig.editorconfig
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.AssemblyInfoInputs.cache
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.AssemblyInfo.cs
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.csproj.CoreCompileInputs.cache
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.dll
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\refint\automata_testbedUtils.dll
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.xml
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\automata_testbedUtils.pdb
+C:\Mac\Home\Desktop\automataVVVV\csharp\automata_testbedUtils\obj\Debug\net8.0\ref\automata_testbedUtils.dll
