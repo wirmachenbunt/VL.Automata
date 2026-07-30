@@ -17,33 +17,73 @@ The cables op has two halves that map directly:
 directly (a factory-registered probe never appeared; a `[ProcessNode]` probe did),
 including after full gamma restarts, with and without `[ImportAsIs]`.
 
-Consequences:
-- The **node factory** approach (`IVLNodeDescriptionFactory` + `NodeBuilding`,
-  which is the *only* way to get one dynamic **bang pin per transition** like the
-  cables op) requires the library to be **deployed as a package** in the packs
-  folder (the way VL.ImGui itself is loaded). It does NOT work as a project ref.
-- So the node is a **`[ProcessNode]`** (`Nodes/AutomataNode.cs`), which vvvv *does*
-  import from a referenced project via `[assembly: ImportAsIs]`
-  (`Properties/AssemblyInfo.cs`). ProcessNode pins are fixed, so per-transition /
-  per-region data is exposed as **spreads / a selector**, not individual pins.
+We originally concluded from this that **per-transition bang pins require the node
+factory, hence packaging**. **That conclusion is now superseded** — see the next
+section. The factory finding still stands *for factories*; we just don't need one.
 
-If we ever want true individual per-transition bang pins: bring back the factory
-(it's in git history — `AutomataNodeFactory.cs` + `Initialization.cs`, it compiled
-fine) and **package + deploy to packs**, don't reference the project.
+## Dynamic per-transition pins WITHOUT a factory (the current design)
 
-## Node pin design (chosen with the user)
+We get one bang pin per transition on the plain `[ProcessNode]`, no packaging, via
+the vvvv **solution-editing API** — the same mechanism VL.Audio.VST's `EffectHost`
+uses for its per-parameter pins (`syncPinGroup`). Two independent pieces make it work,
+neither of which is the factory:
 
-Firing a transition went through several iterations; the user settled on
-**bang + selector**:
-- `Fire` (bool/bang) + `Transition` (string id or "A to B" title) → on Fire's
-  rising edge, fire the named transition.
-- Rejected: `Spread<bool>` aligned to transition index (awkward to bang);
-  `Spread<string>` of ids (can't "bang" a string).
+1. **A pin group declared as a method-parameter attribute.** `Update` takes
+   `[Pin(PinGroupKind = PinGroupKind.Dictionary, PinGroupEditMode = PinGroupEditModes.None)]
+   IReadOnlyDictionary<string,bool> fire`. `PinGroupKind`/`PinGroupEditModes` are in
+   `VL.Model`; `PinAttribute` is `VL.Core.Import.PinAttribute` — the *same* namespace
+   as `[ProcessNode]`/`[ImportAsIs]`, i.e. it's meant for imported nodes. A Dictionary
+   pin group renders as N named pins; each pin's name is a dictionary key, its value the
+   pin value.
+2. **Editing our own pin group at edit time** via `IDevSession.Current.CurrentSolution`
+   → `solution.ModifyPinGroup(nodeId, "Fire", isInput:true)` → `builder.Add(pinName,
+   boolTypeName)` for every transition → `builder.Commit().Confirm(TweakLast)`. The
+   builder *synchronises* the group to exactly the pins we Add, so removed transitions
+   drop their pins. `nodeId` = `_nc.Path.Stack.Peek()` (this node's `UniqueId`);
+   `NodeContext` is injected into the ProcessNode **constructor** (vvvv doesn't turn it
+   into a pin). Type name via `_nc.AppHost.TypeRegistry.GetTypeInfo(typeof(bool)).Name`.
+   See `AutomataNode.SyncFirePins`.
 
-Outputs include `Transition Ids` / `Transition Titles` (so the user can pick a
-value for `Transition`), plus region activity as aligned `Region Active` /
-`Region Ids` spreads. `Editor` is a **Skia `ILayer`** (see below). Full pin table
-in README.
+**All of these types live in `VL.Core.dll`** (namespaces `VL.Lang.PublicAPI`,
+`VL.Model`, `VL.Core.Import`) — the package we already reference. No `VL.Lang`
+reference, no packaging, no factory. Reflected the exact signatures out of
+`VL.Core.dll` / `VL.Core.xml`; the canonical example patch is corelib's
+`help/API/Patch/HowTo Create Pins Programmatically.vl`.
+
+Sync discipline (important — `ModifyPinGroup`/`Confirm` **edit the document**):
+- Only sync when the transition set actually changed (`_firePinsSignature`), never
+  per frame.
+- Only in an editing session — `IDevSession.Current` is null in an exported/standalone
+  app, where the pins are already baked into the `.vl`. Guard on it.
+- `Confirm(SolutionUpdateKind.TweakLast)` keeps it out of undo history / avoids a full
+  recompile. It does not retrigger our load/edit paths, so no feedback loop.
+
+**CONFIRMED WORKING IN GAMMA** (2025.7.3-0015): `[ImportAsIs]` honours the
+`[Pin(PinGroupKind=…)]` param on the `[ProcessNode]`, `NodeContext` is injected into
+the ProcessNode constructor, and the per-transition pins appear/update live — all from
+a referenced project, no packaging, no factory. (If it had failed, the fallback was
+the factory + packaging from git history: `AutomataNodeFactory.cs` + `Initialization.cs`.)
+
+**One codegen gotcha we hit:** the pin-group param MUST be the *concrete*
+`Dictionary<string, object>` (value type `object`, not `bool`; not `IReadOnlyDictionary<>`).
+Anything else made the *patch's* generated code fail to compile with
+`CS0411 … CollectionBuilders.GetBuilder<TValue>(Spread<TValue>, int) cannot be inferred`
+— i.e. an EmitException at patch-compile time, before the node ever runs. The concrete
+`Dictionary<string, object>` is exactly what VL.Audio.VST uses; the real bool pin type
+is set per pin via `builder.Add(name, boolType)`, so the pins are still bool bangs. We
+unbox with `raw is bool b && b`.
+
+## Node pin design
+
+Firing a transition went through several iterations: `Spread<bool>` aligned to index
+(awkward to bang) and `Spread<string>` of ids (can't "bang" a string) were rejected;
+then a **bang + `Transition` selector** stopgap (while we believed per-transition pins
+needed packaging); now the **`Fire` dictionary pin group** above — one real bang pin
+per transition, named by title, auto-synced. The selector pins are gone.
+
+Outputs include `Transition Ids` / `Transition Titles` (the titles match the `Fire`
+pin names), plus region activity as aligned `Region Active` / `Region Ids` spreads.
+`Editor` is a **Skia `ILayer`** (see below). Full pin table in README.
 
 ## Build setup
 
@@ -122,10 +162,17 @@ in README.
   (esp. `help/Advanced/HowTo Build A Custom Editor.vl`, `help/Primitives/HowTo Draw a *`).
 - `reference/demonodeproject/` — the `[ProcessNode]` + `[ImportAsIs]` template that
   established the working import pattern.
+- `reference/vst/EffectHost.cs` — VL.Audio.VST's node (downloaded), the reference for
+  the dynamic-pin-group technique. Look at `Update` (the `[Pin(PinGroupKind=…)]`
+  param), `SyncPinGroup`, `AddToPinGroup`, `GetPinGroupBuilder`.
+- corelib `help/API/Patch/HowTo Create Pins Programmatically.vl` — the canonical
+  patch-side example of `ModifyPinGroup` / `PinGroupBuilder` (in the nuget cache).
 
 ## Open / possible future work
 
-- Individual per-transition bang pins → requires the factory + packaging (above).
+- **Verify the `Fire` pin group in gamma** (the two unverifiable-from-macOS points
+  above). If ImportAsIs doesn't honour the pin-group param, fall back to factory +
+  packaging driving the same group.
 - Editor niceties not yet ported: fit-to-content / reset-view key; wiring
   `Reset Target` to a dropdown of the `States` output.
 - Default spacing for newly created states could grow with the larger radius so they

@@ -22,11 +22,10 @@ Demo.automata              sample document
 
 ## Node model
 
-Implemented as a `[ProcessNode]` (category `Automata`). The low-level node factory
-that would give one bang pin *per transition* only runs when the library is
-deployed as a vvvv **package** in the packs folder; as a **referenced project**
-(the dev setup here) vvvv imports `[ProcessNode]` classes, so the per-transition /
-per-region parts are exposed as **aligned spreads** instead of individual pins.
+Implemented as a `[ProcessNode]` (category `Automata`). `Fire` is a **dynamic pin
+group**: the node keeps **one bang pin per transition** in sync with the machine —
+no packaging or node factory required (see [DEVNOTES](DEVNOTES.md) for how). Regions
+are still exposed as aligned spreads.
 
 `Automata` pins:
 
@@ -36,24 +35,23 @@ per-region parts are exposed as **aligned spreads** instead of individual pins.
 | in | `Advance` | bool | step the machine one frame while true |
 | in | `Reset Target` | string | state label to reset to (empty = START) |
 | in | `Reset` | bool | rising edge resets |
-| in | `Fire` | bool (bang) | rising edge fires the transition named by `Transition` |
-| in | `Transition` | string | id or title of the transition to fire (see Transition Titles) |
+| in | `Fire` | **pin group** of bool (bang) | one pin per transition, named by its "A to B" title; rising edge fires that transition |
 | out | `Active State` | string | current state label |
 | out | `Next State` | string | target of a pending (multi-frame) transition |
 | out | `State Frames` | int | frames spent in the current state |
 | out | `Transition Countdown` | float | pending transition progress, 1 → 0 |
 | out | `States` | Spread&lt;string&gt; | reset-target labels |
-| out | `Transition Ids` | Spread&lt;string&gt; | transition ids — **align `Fire` to this** |
-| out | `Transition Titles` | Spread&lt;string&gt; | "A to B" labels (display) |
+| out | `Transition Ids` | Spread&lt;string&gt; | transition ids |
+| out | `Transition Titles` | Spread&lt;string&gt; | "A to B" labels (match the `Fire` pin names) |
 | out | `Region Active` | Spread&lt;float&gt; | 1/0 per region, aligned with Region Ids |
 | out | `Region Ids` | Spread&lt;string&gt; | region ids |
 | out | `Editor` | ILayer (Skia) | the editor as a Skia layer — wire straight into a renderer |
 
-**Firing a transition:** set `Transition` to a transition's **id** or **title**
-(from the `Transition Ids` / `Transition Titles` outputs) and bang `Fire`. On Fire's
-rising edge that transition fires — only when it's valid from the current state with
-nothing pending. To drive different transitions from different events, switch
-`Transition` per event and bang `Fire`.
+**Firing a transition:** the `Fire` pin group holds one bang pin per transition,
+named by its **title** (e.g. `Idle to Run`). Bang the pin for the transition you
+want; on its rising edge that transition fires — only when it's valid from the
+current state with nothing pending. The pins appear/disappear automatically as you
+add, remove, or rename transitions in the editor.
 
 ## Editor window
 
@@ -81,6 +79,7 @@ active state valid) and the `.automata` file is saved. Interactions:
 - **Ctrl + click a transition** → run it now (jumps to its `from`, then starts it)
 - **Alt/Middle + click** a state / transition / region → delete it
 - **Alt + drag** empty canvas → create a region (drag out the radius)
+- **double-click a region** → rename it (inline)
 - **drag a region body** → move it; **drag its edge** → resize it
 - **right-drag** → pan the canvas;  **mouse wheel** → zoom (around the cursor)
 
@@ -96,11 +95,12 @@ in-progress transition (amber) are highlighted live from the running engine.
 3. Drop the **Automata** node (category `Automata`).
 4. Set `Path` to a `.automata` file (copy `Demo.automata`), wire the `Editor`
    layer straight into a renderer / RenderWindow to open the editor window.
-5. Toggle `Advance` to run; pulse a `Fire` slot to change state; watch
-   `Active State` / `State Frames` / `Transition Countdown` / `Region Active`.
+5. Toggle `Advance` to run; bang a transition's pin under `Fire` to change state;
+   watch `Active State` / `State Frames` / `Transition Countdown` / `Region Active`.
 
-Note: `[ProcessNode]` classes hot-reload on rebuild; the node factory path does not
-(it needs a full package + gamma restart), which is why this port uses ProcessNode.
+Note: `[ProcessNode]` classes hot-reload on rebuild, which is why this port uses
+ProcessNode. The per-transition `Fire` pins are driven by the vvvv solution API
+(`ISolution.ModifyPinGroup`) at edit time — no packaging or factory needed.
 
 ## Status
 

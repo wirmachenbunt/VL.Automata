@@ -1,20 +1,27 @@
 using VL.Automata.Engine;
 using VL.ImGui;
+using VL.Lang.PublicAPI;
 using VL.Lib.Collections;
+using VL.Model;
 using VL.Skia;
+// 'using VL.ImGui' pulls in VL.ImGui.PinAttribute, which collides with the import
+// attribute we need here — alias to the VL.Core.Import one (same gotcha as the editor).
+using Pin = VL.Core.Import.PinAttribute;
 
 namespace VL.Automata;
 
 // The Automata FSM node for vvvv gamma — the [ProcessNode] port of the cables op
-// Ops.Local.Automata. (A node factory would give one bang pin per transition, but
-// that only runs from a deployed vvvv package; as a referenced project vvvv imports
-// the [ProcessNode], so transitions/regions are exposed via spreads.)
+// Ops.Local.Automata.
 //
-// Firing a transition: set 'Transition' to a transition's id or "A to B" title
-// (read the choices off the 'Transition Ids' / 'Transition Titles' outputs) and
-// bang 'Fire'. On Fire's rising edge the selected transition fires — only when it's
-// valid from the current state with nothing pending. To drive different transitions
-// from different events, switch 'Transition' per event and bang 'Fire'.
+// Firing a transition: the 'Fire' input is a *dynamic pin group* — the node keeps
+// one bang pin per transition in sync with the machine (named by the transition's
+// "A to B" title). Bang the pin for the transition you want; on its rising edge that
+// transition fires, but only when it's valid from the current state with nothing
+// pending. The pins are added/removed automatically as you edit the machine, via the
+// vvvv solution API (ISolution.ModifyPinGroup) — see SyncFirePins. This works from a
+// referenced project (no packaging/factory needed): the pin group is a compile-time
+// [Pin(PinGroupKind=…)] attribute the [ImportAsIs] importer reads, and the sync is
+// pure edit-time solution editing through IDevSession.Current.
 //
 // 'Path' points at a .automata file (same JSON as the cables op). 'Editor' is the
 // editor as a Skia ILayer; wire it into a renderer (Space = DIPTopLeft). Editing
@@ -22,6 +29,11 @@ namespace VL.Automata;
 [ProcessNode(Name = "Automata", Category = "Automata")]
 public class AutomataNode : IDisposable
 {
+    // The node's own context — needed to address this node application when editing
+    // its pin group (Path.Stack.Peek() is this node's UniqueId). vvvv injects it into
+    // the constructor of an imported node rather than exposing it as a pin.
+    private readonly NodeContext _nc;
+
     private readonly AutomataEngine _engine = new();
     // Wraps the ImGui editor widget as a Skia layer, so the node can output an
     // ILayer directly — no ToSkiaLayer node needed in the patch. Held per instance
@@ -31,15 +43,31 @@ public class AutomataNode : IDisposable
     private string _loadedPath = "\0"; // sentinel so first Update always loads
     private bool _docDirty;
     private bool _prevReset;
-    private bool _prevFire;
+
+    // Fire pin-group bookkeeping. The pin name shown in the patch is the transition
+    // title (made unique); these maps translate a pin back to its transition id and
+    // track each pin's previous value for rising-edge detection.
+    private readonly Dictionary<string, string> _firePinToTransitionId = new();
+    private readonly Dictionary<string, bool> _prevFirePins = new();
+    // Signature of the current transition set; the pin group is only re-synced (a
+    // document edit) when this actually changes, never every frame.
+    private string _firePinsSignature = "\0";
+
+    public AutomataNode(NodeContext nodeContext) => _nc = nodeContext;
 
     public void Update(
         string? path,
         bool advance,
         string? resetTarget,
         bool reset,
-        bool fire,
-        string? transition,
+        // Must be the *concrete* Dictionary<string, object> — VL's dictionary-pin-group
+        // codegen only recognises that exact shape; an IReadOnlyDictionary<> (or a bool
+        // value type) drops to a path that emits an untyped Spread and the patch fails to
+        // compile (CS0411 on CollectionBuilders.GetBuilder). Value type is object because
+        // the concrete pin type (bool) is set per pin via builder.Add in SyncFirePins.
+        // This mirrors VL.Audio.VST's EffectHost.parameters exactly.
+        [Pin(PinGroupKind = PinGroupKind.Dictionary, PinGroupEditMode = PinGroupEditModes.RemoveOnly)]
+        Dictionary<string, object> fire,
         out string activeState,
         out string nextState,
         out int stateFrames,
@@ -64,15 +92,23 @@ public class AutomataNode : IDisposable
 
         var transitions = _engine.TransitionPins;
 
-        // Fire the selected transition on Fire's rising edge (by id or title).
-        if (fire && !_prevFire && !string.IsNullOrEmpty(transition))
+        // Keep one bang pin per transition. Only touches the document when the
+        // transition set changed (SyncFirePins is a no-op otherwise).
+        SyncFirePins(transitions);
+
+        // Fire a transition on the rising edge of its pin. Valid-from-current-state /
+        // nothing-pending is enforced by the engine.
+        if (fire is not null)
         {
-            foreach (var t in transitions)
+            foreach (var (pin, raw) in fire)
             {
-                if (t.Id == transition || t.Title == transition) { _engine.FireTransition(t.Id); break; }
+                var value = raw is bool b && b; // pins are bool; unbox defensively
+                var prev = _prevFirePins.TryGetValue(pin, out var p) && p;
+                if (value && !prev && _firePinToTransitionId.TryGetValue(pin, out var tid))
+                    _engine.FireTransition(tid);
+                _prevFirePins[pin] = value;
             }
         }
-        _prevFire = fire;
 
         if (advance) _engine.StepFrame();
 
@@ -115,8 +151,51 @@ public class AutomataNode : IDisposable
             ForceState = id => _engine.ForceState(id),
             ForceTransition = id => _engine.ForceTransition(id)
         };
-        _prevFire = false;
+        _prevFirePins.Clear();
         _prevReset = false;
+    }
+
+    // Add/remove Fire pins so there is exactly one per transition, named by its title
+    // (deduplicated). Runs only when the transition set changed, and only in an editing
+    // session (IDevSession.Current is null in an exported/standalone app, where the pins
+    // are already baked into the document). ModifyPinGroup's builder synchronises the
+    // group to exactly the pins we Add — transitions removed from the machine drop their
+    // pins automatically.
+    private void SyncFirePins(IReadOnlyList<AutomataEngine.TransitionPin> transitions)
+    {
+        // Cheap change-detection: id+title of every transition. Skip if unchanged.
+        var sig = string.Join("\n", transitions.Select(t => t.Id + "\t" + t.Title));
+        if (sig == _firePinsSignature) return;
+
+        var solution = IDevSession.Current?.CurrentSolution;
+        if (solution is null) return; // exported app / no editor — nothing to sync
+
+        var nodeId = _nc.Path.Stack.Peek();
+        var boolType = _nc.AppHost.TypeRegistry.GetTypeInfo(typeof(bool)).Name;
+        var builder = solution.ModifyPinGroup(nodeId, "Fire", isInput: true);
+
+        _firePinToTransitionId.Clear();
+        var used = new HashSet<string>();
+        foreach (var t in transitions)
+        {
+            var name = UniquePinName(t.Title, used);
+            builder.Add(name, boolType);
+            _firePinToTransitionId[name] = t.Id;
+        }
+        // TweakLast keeps this out of a separate undo step / avoids a full recompile.
+        builder.Commit().Confirm(SolutionUpdateKind.TweakLast);
+
+        _firePinsSignature = sig;
+    }
+
+    // Pin names must be unique within the group; two transitions can share a title
+    // (e.g. duplicate "A to B"), so disambiguate collisions with a numeric suffix.
+    private static string UniquePinName(string title, HashSet<string> used)
+    {
+        var baseName = string.IsNullOrWhiteSpace(title) ? "Transition" : title;
+        var name = baseName;
+        for (var i = 2; !used.Add(name); i++) name = $"{baseName} ({i})";
+        return name;
     }
 
     // A state machine always has a START state; create one for an empty document

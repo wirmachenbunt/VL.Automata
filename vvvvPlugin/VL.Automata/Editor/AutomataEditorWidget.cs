@@ -30,6 +30,7 @@ namespace VL.Automata;
 //   • Ctrl+click a transition    → run it now (jump to "from", then start)
 //   • Alt / Middle + click a state / transition / region → delete
 //   • Alt + drag empty canvas    → create a region (drag out the radius)
+//   • double-click a region      → edit its title
 //   • drag a region body → move; drag its edge → resize
 //   • drag empty canvas  → pan;  mouse wheel → zoom
 public sealed class AutomataEditorWidget : IDisposable
@@ -70,7 +71,7 @@ public sealed class AutomataEditorWidget : IDisposable
     private Vector2? _regionDraftCenter;    // Alt-drag region creation in progress
 
     // inline editing
-    private enum EditKind { None, StateLabel, TransitionFrames }
+    private enum EditKind { None, StateLabel, TransitionFrames, RegionTitle }
     private EditKind _editKind;
     private string _editStateOrTransitionId = "";
     private string _editBuffer = "";
@@ -175,7 +176,9 @@ public sealed class AutomataEditorWidget : IDisposable
             dl.AddCircle(c, rad, stroke, 0, on ? 2f : 1.5f);
             string title = string.IsNullOrWhiteSpace(r.Title) ? r.Id : r.Title;
             uint titleCol = on ? Col(0.96f, 0.99f, 1f) : Col(0.863f, 0.941f, 1f, 0.95f);
-            Text(dl, c - new Vector2(rad, rad + TextSize(title).Y), titleCol, title);
+            // Centred on the circle centre, like the cables editor (title at region x/y
+            // with offset = size/2). Text() takes a top-left, so subtract half the size.
+            Text(dl, c - TextSize(title) * 0.5f, titleCol, title);
         }
     }
 
@@ -207,9 +210,7 @@ public sealed class AutomataEditorWidget : IDisposable
             dl.AddTriangleFilled(b0, b0 - dir * Z(12) + n * Z(6), b0 - dir * Z(12) - n * Z(6), col);
 
             var mid = (a0 + b0) * 0.5f;
-            string fromLabel = string.IsNullOrWhiteSpace(from.Label) ? from.Id : from.Label;
-            string toLabel = string.IsNullOrWhiteSpace(to.Label) ? to.Id : to.Label;
-            string label = $"{fromLabel} to {toLabel} [{Math.Max(0, t.Frames)}f]";
+            string label = TransitionLabel(t, from, to);
             var ts = TextSize(label);
             // Rounded-pill label like cables (bg ~1.5× wide, ~2× tall, cornerRadius 8).
             var half = ts * 0.5f + new Vector2(ts.X * 0.25f, ts.Y * 0.5f);
@@ -301,7 +302,8 @@ public sealed class AutomataEditorWidget : IDisposable
         {
             if (hitState is not null) StartEditStateLabel(hitState);
             else if (hitTransition is not null) StartEditTransitionFrames(hitTransition);
-            else if (hitRegion is null) AddState(mouse);
+            else if (hitRegion is not null) StartEditRegionTitle(hitRegion);
+            else AddState(mouse);
             return;
         }
 
@@ -429,17 +431,42 @@ public sealed class AutomataEditorWidget : IDisposable
         return null;
     }
 
+    // The label "A to B [Nf]" — one source of truth for drawing and hit-testing.
+    private static string TransitionLabel(TransitionData t, StateData from, StateData to)
+    {
+        string fromLabel = string.IsNullOrWhiteSpace(from.Label) ? from.Id : from.Label;
+        string toLabel = string.IsNullOrWhiteSpace(to.Label) ? to.Id : to.Label;
+        return $"{fromLabel} to {toLabel} [{Math.Max(0, t.Frames)}f]";
+    }
+
     private TransitionData? HitTransition(Vector2 mouse)
     {
         float tol = TransitionHitDist / _zoom;
-        foreach (var t in Document.Transitions)
+        // Reverse order so the topmost-drawn transition wins the hit, like states/regions.
+        for (int i = Document.Transitions.Count - 1; i >= 0; i--)
         {
+            var t = Document.Transitions[i];
             var from = StateById(t.From);
             var to = StateById(t.To);
             if (from is null || to is null) continue;
             var a = new Vector2((float)from.X, (float)from.Y);
             var b = new Vector2((float)to.X, (float)to.Y);
-            if (DistToSegment(mouse, a, b) <= tol) return t;
+            if (a == b) continue;
+            var dir = Vector2.Normalize(b - a);
+            var a0 = a + dir * StateRadius;   // trimmed segment (state edge → state edge),
+            var b0 = b - dir * StateRadius;   // matching the drawn connector line
+            var mid = (a0 + b0) * 0.5f;
+
+            // Primary target: the label pill. Its doc-space half-extent is the drawn
+            // screen half-extent (ts*0.5 + (ts.X*0.25, ts.Y*0.5), ts = raw*zoom) / zoom,
+            // which reduces to (raw.X*0.75, raw.Y) — see DrawTransitions.
+            var raw = IG.CalcTextSize(TransitionLabel(t, from, to));
+            var half = new Vector2(raw.X * 0.75f, raw.Y);
+            if (Math.Abs(mouse.X - mid.X) <= half.X && Math.Abs(mouse.Y - mid.Y) <= half.Y)
+                return t;
+
+            // Fallback: near the connector line itself.
+            if (DistToSegment(mouse, a0, b0) <= tol) return t;
         }
         return null;
     }
@@ -531,6 +558,14 @@ public sealed class AutomataEditorWidget : IDisposable
         _focusEdit = true;
     }
 
+    private void StartEditRegionTitle(RegionData r)
+    {
+        _editKind = EditKind.RegionTitle;
+        _editStateOrTransitionId = r.Id;
+        _editBuffer = r.Title ?? "";
+        _focusEdit = true;
+    }
+
     private void StartEditTransitionFrames(TransitionData t)
     {
         _editKind = EditKind.TransitionFrames;
@@ -548,6 +583,13 @@ public sealed class AutomataEditorWidget : IDisposable
             var s = StateById(_editStateOrTransitionId);
             if (s is null) { _editKind = EditKind.None; return; }
             screen = StateScreen(s) - new Vector2(60, 10);
+            width = 120;
+        }
+        else if (_editKind == EditKind.RegionTitle)
+        {
+            var r = Document.Regions.FirstOrDefault(x => x.Id == _editStateOrTransitionId);
+            if (r is null) { _editKind = EditKind.None; return; }
+            screen = ToScreen(r.X, r.Y) - new Vector2(60, 10);
             width = 120;
         }
         else
@@ -584,6 +626,11 @@ public sealed class AutomataEditorWidget : IDisposable
             var t = Document.Transitions.FirstOrDefault(x => TransitionKey(x) == _editStateOrTransitionId);
             if (t is not null && int.TryParse(_editBuffer, NumberStyles.Integer, CultureInfo.InvariantCulture, out var f))
                 t.Frames = Math.Max(0, f);
+        }
+        else if (_editKind == EditKind.RegionTitle)
+        {
+            var r = Document.Regions.FirstOrDefault(x => x.Id == _editStateOrTransitionId);
+            if (r is not null) r.Title = _editBuffer.Trim();
         }
         _editKind = EditKind.None;
         Changed?.Invoke();
