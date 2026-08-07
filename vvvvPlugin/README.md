@@ -43,10 +43,9 @@ The machine is **stored in the patch**, not in an external file — see
 | out | `State Frames` | int | frames spent in the current state |
 | out | `Transition Countdown` | float | pending transition progress, 1 → 0 |
 | out | `States` | Spread&lt;string&gt; | reset-target labels |
-| out | `Transition Ids` | Spread&lt;string&gt; | transition ids |
 | out | `Transition Titles` | Spread&lt;string&gt; | "A to B" labels (match the `Fire` pin names) |
-| out | `Region Active` | Spread&lt;float&gt; | 1/0 per region, aligned with Region Ids |
-| out | `Region Ids` | Spread&lt;string&gt; | region ids |
+| out | `Region Active` | Spread&lt;float&gt; | 1/0 per region, aligned with Region Names |
+| out | `Region Names` | Spread&lt;string&gt; | region names (the title you give a region; falls back to its id) |
 | out | `Editor` | ILayer (Skia) | the editor as a Skia layer — wire straight into a renderer |
 
 **Firing a transition:** the `Fire` pin group holds one bang pin per transition,

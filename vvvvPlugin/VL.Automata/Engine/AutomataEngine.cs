@@ -14,7 +14,7 @@ public sealed class AutomataEngine
 
     // --- Pin descriptors derived from the document (consumed by the factory) ---
     public readonly record struct TransitionPin(string Id, string Title, string From, string To, int Frames);
-    public readonly record struct RegionPin(string Id, string Name, string Title);
+    public readonly record struct RegionPin(string Id, string Name);
     public readonly record struct ResetTarget(string Id, string Label);
 
     private sealed class Pending
@@ -93,16 +93,21 @@ public sealed class AutomataEngine
     // counting steps makes "frames" a real frame count (advanceFrame in the cables op).
     public void StepFrame()
     {
-        _stateFrames += 1;
         if (_pending is not null)
         {
+            // Mid-transition: advance the transition, but freeze the state frame counter —
+            // it only counts time actually spent settled in a state, not while moving between.
             _pending.Elapsed += 1;
             if (_pending.Elapsed >= _pending.Frames)
             {
                 var next = _pending.To;
                 _pending = null;
-                SetActiveStateId(next); // resets stateFrames to 0
+                SetActiveStateId(next); // resets stateFrames to 0; counting resumes next frame
             }
+        }
+        else
+        {
+            _stateFrames += 1;
         }
     }
 
@@ -214,19 +219,15 @@ public sealed class AutomataEngine
             .ToList();
     }
 
-    // Region output title is disambiguated with the id only when two regions
-    // share a title; the pin *name* uses the immutable id so links never break.
+    // One pin per region: the immutable Id (used to look up activity) plus the region's
+    // display Name (its title, falling back to the id) for the Region Names output.
     private void BuildRegionPins()
     {
         _regionPins = new List<RegionPin>();
         foreach (var region in _doc.Regions)
         {
             if (region is null || string.IsNullOrEmpty(region.Id)) continue;
-            string baseTitle = GetRegionTitle(region) + " Active";
-            bool duplicate = _doc.Regions.Any(o =>
-                o is not null && o.Id != region.Id && GetRegionTitle(o) + " Active" == baseTitle);
-            string title = duplicate ? $"{baseTitle} ({region.Id})" : baseTitle;
-            _regionPins.Add(new RegionPin(region.Id, region.Id + "-active", title));
+            _regionPins.Add(new RegionPin(region.Id, GetRegionTitle(region)));
         }
     }
 

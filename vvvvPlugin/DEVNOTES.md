@@ -81,8 +81,8 @@ then a **bang + `Transition` selector** stopgap (while we believed per-transitio
 needed packaging); now the **`Fire` dictionary pin group** above — one real bang pin
 per transition, named by title, auto-synced. The selector pins are gone.
 
-Outputs include `Transition Ids` / `Transition Titles` (the titles match the `Fire`
-pin names), plus region activity as aligned `Region Active` / `Region Ids` spreads.
+Outputs include `Transition Titles` (they match the `Fire` pin names), plus region
+activity as aligned `Region Active` / `Region Names` spreads.
 `Editor` is a **Skia `ILayer`** (see below). Full pin table in README.
 
 ## Persistence: the machine is stored *in the patch* (`Data` pin), not a file

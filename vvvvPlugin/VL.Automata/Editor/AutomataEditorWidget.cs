@@ -152,8 +152,9 @@ public sealed class AutomataEditorWidget : IDisposable
 
         DrawRegions(dl);
         DrawTransitions(dl);
-        DrawStates(dl);
+        // Draw the in-progress connection *before* the states so it passes behind them.
         DrawPendingTransition(dl, mouseLocal);
+        DrawStates(dl);
         DrawRegionDraft(dl, mouse);
         DrawHelp(dl, size);
 
@@ -194,6 +195,34 @@ public sealed class AutomataEditorWidget : IDisposable
         return MathF.Sqrt(dx * dx + dy * dy) <= (float)r.Radius + StateRadius;
     }
 
+    // A transition gets a small perpendicular shift when its reverse (to→from) also exists,
+    // so the two are drawn — and picked — with a gap instead of overlapping. Returns the unit
+    // left normal (or zero: no reverse / degenerate). Each direction uses its own left normal,
+    // so the pair separates symmetrically. Scale it by Z(TransitionGap) in screen space, or by
+    // TransitionGap directly in document space.
+    private const float TransitionGap = 16f; // document units, each side
+    // When two states have transitions both ways, slide each label to 30% along its own
+    // direction. Since the reverse runs the other way, the pair lands at 30% and 70% of the
+    // line, so the labels no longer stack. A lone transition keeps its label centred.
+    private const float LabelFracWithReverse = 0.30f;
+    // Label pill padding: a small fixed gap around the text (document units), so the pill
+    // hugs the text with constant breathing room rather than padding proportional to length.
+    private const float LabelPadX = 9f;
+    private const float LabelPadY = 5f;
+
+    private bool HasReverseTransition(TransitionData t) =>
+        Document.Transitions.Any(o => o is not null && o.From == t.To && o.To == t.From);
+
+    private float TransitionLabelFrac(TransitionData t) =>
+        HasReverseTransition(t) ? LabelFracWithReverse : 0.5f;
+
+    private Vector2 TransitionGapNormal(TransitionData t, Vector2 a, Vector2 b)
+    {
+        if (a == b || !HasReverseTransition(t)) return Vector2.Zero;
+        var dir = Vector2.Normalize(b - a);
+        return new Vector2(-dir.Y, dir.X);
+    }
+
     private void DrawTransitions(ImDrawListPtr dl)
     {
         string? pending = PendingTransitionId?.Invoke();
@@ -209,17 +238,20 @@ public sealed class AutomataEditorWidget : IDisposable
             uint col = active ? Col(1f, 0.82f, 0.40f) : Col(0.16f, 0.90f, 1f);
 
             var dir = Vector2.Normalize(b - a);
-            var a0 = a + dir * Z(StateRadius);
-            var b0 = b - dir * Z(StateRadius);
+            var off = TransitionGapNormal(t, a, b) * Z(TransitionGap);
+            var a0 = a + dir * Z(StateRadius) + off;
+            var b0 = b - dir * Z(StateRadius) + off;
             dl.AddLine(a0, b0, col, active ? 3f : 2f);
             var n = new Vector2(-dir.Y, dir.X);
             dl.AddTriangleFilled(b0, b0 - dir * Z(24) + n * Z(12), b0 - dir * Z(24) - n * Z(12), col);
 
-            var mid = (a0 + b0) * 0.5f;
+            // Label sits at 30%/70% when a reverse transition exists (else centred), so the
+            // two labels don't overlap.
+            var mid = a0 + (b0 - a0) * TransitionLabelFrac(t);
             string label = TransitionLabel(t, from, to);
             var ts = TextSize(label);
-            // Rounded-pill label like cables (bg ~1.5× wide, ~2× tall, cornerRadius 8).
-            var half = ts * 0.5f + new Vector2(ts.X * 0.25f, ts.Y * 0.5f);
+            // Pill hugs the text with a small fixed gap each side (see LabelPadX/Y).
+            var half = ts * 0.5f + new Vector2(Z(LabelPadX), Z(LabelPadY));
             float round = MathF.Min(half.Y, Z(10));
             uint bg = active ? Col(0.553f, 0.435f, 0.180f, 0.95f) : Col(0.388f, 0.388f, 0.388f, 0.95f);
             dl.AddRectFilled(mid - half, mid + half, bg, round);
@@ -231,7 +263,7 @@ public sealed class AutomataEditorWidget : IDisposable
     {
         string? active = ActiveStateId?.Invoke();
         float rad = Z(StateRadius);
-        float thick = Math.Max(2f, Z(4f)); // cables strokeWidth 4
+        float thick = Math.Max(3f, Z(6f)); // 50% thicker than the cables strokeWidth 4
         foreach (var s in Document.States)
         {
             var p = StateScreen(s);
@@ -243,7 +275,7 @@ public sealed class AutomataEditorWidget : IDisposable
             // Only the active state gets the orange highlight (#f6a21a), exactly
             // like the cables editor; a pending transition source glows amber.
             uint ring = isActive ? Col(0.965f, 0.635f, 0.102f)
-                : isPendingFrom ? Col(1f, 0.82f, 0.40f)
+                : isPendingFrom ? Col(0.95f, 0.20f, 0.20f)         // matches the pending-connection line
                 : Col(0.055f, 0.067f, 0.075f);                     // #0e1113
             dl.AddCircle(p, rad, ring, 0, thick);
             string label = string.IsNullOrWhiteSpace(s.Label) ? s.Id : s.Label;
@@ -266,7 +298,7 @@ public sealed class AutomataEditorWidget : IDisposable
         if (_pendingFrom is null) return;
         var from = StateById(_pendingFrom);
         if (from is null) return;
-        dl.AddLine(StateScreen(from), _origin + mouseLocal, Col(1f, 0.82f, 0.40f, 0.8f), 2f);
+        dl.AddLine(StateScreen(from), _origin + mouseLocal, Col(0.95f, 0.20f, 0.20f, 0.9f), 2f);
     }
 
     private void DrawRegionDraft(ImDrawListPtr dl, Vector2 mouse)
@@ -459,15 +491,16 @@ public sealed class AutomataEditorWidget : IDisposable
             var b = new Vector2((float)to.X, (float)to.Y);
             if (a == b) continue;
             var dir = Vector2.Normalize(b - a);
-            var a0 = a + dir * StateRadius;   // trimmed segment (state edge → state edge),
-            var b0 = b - dir * StateRadius;   // matching the drawn connector line
-            var mid = (a0 + b0) * 0.5f;
+            var off = TransitionGapNormal(t, a, b) * TransitionGap; // gap when a reverse exists
+            var a0 = a + dir * StateRadius + off;   // trimmed segment (state edge → state edge),
+            var b0 = b - dir * StateRadius + off;   // matching the drawn connector line
+            var mid = a0 + (b0 - a0) * TransitionLabelFrac(t); // label pos: 30%/70% or centre
 
-            // Primary target: the label pill. Its doc-space half-extent is the drawn
-            // screen half-extent (ts*0.5 + (ts.X*0.25, ts.Y*0.5), ts = raw*zoom) / zoom,
-            // which reduces to (raw.X*0.75, raw.Y) — see DrawTransitions.
+            // Primary target: the label pill. Its doc-space half-extent mirrors the drawn
+            // screen half-extent (ts*0.5 + Z(LabelPad), ts = raw*zoom) divided by zoom, i.e.
+            // raw*0.5 + LabelPad — see DrawTransitions.
             var raw = IG.CalcTextSize(TransitionLabel(t, from, to));
-            var half = new Vector2(raw.X * 0.75f, raw.Y);
+            var half = raw * 0.5f + new Vector2(LabelPadX, LabelPadY);
             if (Math.Abs(mouse.X - mid.X) <= half.X && Math.Abs(mouse.Y - mid.Y) <= half.Y)
                 return t;
 
@@ -582,21 +615,20 @@ public sealed class AutomataEditorWidget : IDisposable
 
     private void DrawInlineEdit()
     {
-        Vector2 screen;
-        float width;
+        // The label being edited is drawn centered on this anchor (state/region centre,
+        // or transition midpoint) at the zoomed font size — see DrawStates / DrawTransitions.
+        Vector2 anchor;
         if (_editKind == EditKind.StateLabel)
         {
             var s = StateById(_editStateOrTransitionId);
             if (s is null) { _editKind = EditKind.None; return; }
-            screen = StateScreen(s) - new Vector2(60, 10);
-            width = 120;
+            anchor = StateScreen(s);
         }
         else if (_editKind == EditKind.RegionTitle)
         {
             var r = Document.Regions.FirstOrDefault(x => x.Id == _editStateOrTransitionId);
             if (r is null) { _editKind = EditKind.None; return; }
-            screen = ToScreen(r.X, r.Y) - new Vector2(60, 10);
-            width = 120;
+            anchor = ToScreen(r.X, r.Y);
         }
         else
         {
@@ -604,12 +636,61 @@ public sealed class AutomataEditorWidget : IDisposable
             var from = t is null ? null : StateById(t.From);
             var to = t is null ? null : StateById(t.To);
             if (t is null || from is null || to is null) { _editKind = EditKind.None; return; }
-            screen = (StateScreen(from) + StateScreen(to)) * 0.5f - new Vector2(30, 10);
-            width = 60;
+            var sa = StateScreen(from);
+            var sb = StateScreen(to);
+            if (sa == sb) { anchor = sa; }
+            else
+            {
+                // Match the drawn label exactly: trimmed segment + gap, then the 30%/70%
+                // (or centre) point along it.
+                var dir = Vector2.Normalize(sb - sa);
+                var off = TransitionGapNormal(t, sa, sb) * Z(TransitionGap);
+                var a0 = sa + dir * Z(StateRadius) + off;
+                var b0 = sb - dir * Z(StateRadius) + off;
+                anchor = a0 + (b0 - a0) * TransitionLabelFrac(t);
+            }
         }
 
+        // Match the labels' zoomed font so the field overlays the original text (InputText
+        // otherwise renders at the base font size). Metrics below are then in the same
+        // zoomed pixels as the label. Transitions edit just a number, so scale that box up
+        // a bit more — it's easier to read and hit — and the caption scales with it.
+        float editScale = _zoom * (_editKind == EditKind.TransitionFrames ? 1.6f : 1f);
+        IG.SetWindowFontScale(editScale);
+
+        var pad = IG.GetStyle().FramePadding;
+        // Size the box to the current text (plus a little room for the caret) and centre it
+        // on the anchor, so the left-aligned input sits where the centered label was. It
+        // grows symmetrically as you type, staying centred.
+        float caretSlack = IG.CalcTextSize("0").X + 4f;
+        float textW = IG.CalcTextSize(_editBuffer.Length > 0 ? _editBuffer : " ").X;
+        float boxW = textW + pad.X * 2f + caretSlack;
+        // Keep a comfortable minimum so a single digit doesn't yield a cramped box.
+        if (_editKind == EditKind.TransitionFrames)
+            boxW = MathF.Max(boxW, IG.CalcTextSize("0000").X + pad.X * 2f);
+        float boxH = IG.GetFrameHeight();
+        var screen = anchor - new Vector2(boxW, boxH) * 0.5f;
+
+        // For a transition, caption the field so it's clear you're editing the delay.
+        // Centred just above the box, in the same zoomed font.
+        if (_editKind == EditKind.TransitionFrames)
+        {
+            const string caption = "time";
+            var capSize = IG.CalcTextSize(caption);
+            IG.SetCursorScreenPos(new Vector2(anchor.X - capSize.X * 0.5f, screen.Y - capSize.Y - 2f));
+            IG.PushStyleColor(ImGuiNET.ImGuiCol.Text, Col(0.70f, 0.78f, 0.85f));
+            IG.TextUnformatted(caption);
+            IG.PopStyleColor();
+        }
+
+        // Opaque field background — the default ImGui FrameBg is translucent, which let the
+        // canvas/label bleed through the edit box.
+        IG.PushStyleColor(ImGuiNET.ImGuiCol.FrameBg, Col(0.16f, 0.17f, 0.19f));
+        IG.PushStyleColor(ImGuiNET.ImGuiCol.FrameBgHovered, Col(0.22f, 0.23f, 0.26f));
+        IG.PushStyleColor(ImGuiNET.ImGuiCol.FrameBgActive, Col(0.24f, 0.25f, 0.28f));
+
         IG.SetCursorScreenPos(screen);
-        IG.SetNextItemWidth(width);
+        IG.SetNextItemWidth(boxW);
         if (_focusEdit) { IG.SetKeyboardFocusHere(); _focusEdit = false; }
 
         var flags = ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll;
@@ -617,6 +698,10 @@ public sealed class AutomataEditorWidget : IDisposable
 
         bool commit = IG.InputText("##automata-edit", ref _editBuffer, 128, flags);
         bool lostFocus = IG.IsItemDeactivated();
+
+        IG.PopStyleColor(3);
+        IG.SetWindowFontScale(1f);
+
         if (commit || lostFocus) CommitEdit();
     }
 

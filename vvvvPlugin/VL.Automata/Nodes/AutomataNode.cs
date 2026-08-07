@@ -114,10 +114,9 @@ public class AutomataNode : IDisposable
         out int stateFrames,
         out float transitionCountdown,
         out Spread<string> states,
-        out Spread<string> transitionIds,
         out Spread<string> transitionTitles,
         out Spread<float> regionActive,
-        out Spread<string> regionIds,
+        out Spread<string> regionNames,
         out ILayer? editor)
     {
         LoadIfChanged(data ?? "");
@@ -166,10 +165,9 @@ public class AutomataNode : IDisposable
         stateFrames = _engine.StateFrames;
         transitionCountdown = (float)_engine.TransitionCountdown;
         states = _engine.States.ToSpread();
-        transitionIds = transitions.Select(t => t.Id).ToSpread();
         transitionTitles = transitions.Select(t => t.Title).ToSpread();
         regionActive = regions.Select(r => _engine.RegionActive(r.Id)).ToSpread();
-        regionIds = regions.Select(r => r.Id).ToSpread();
+        regionNames = regions.Select(r => r.Name).ToSpread();
 
         // Wrap the ImGui widget into a Skia layer for direct output. _toSkia.Update
         // refreshes the ImGui draw data; the output is _editorLayer (_toSkia wrapped in
