@@ -20,9 +20,9 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="VL.Core" Version="2025.7.3-0015-g49df5281c9" />
-    <PackageReference Include="VL.ImGui" Version="2025.7.3-0015-g49df5281c9" />
-    <PackageReference Include="VL.ImGui.Skia" Version="2025.7.3-0015-g49df5281c9" />
+    <PackageReference Include="VL.Core" Version="2025.7.4" />
+    <PackageReference Include="VL.ImGui" Version="2025.7.4" />
+    <PackageReference Include="VL.ImGui.Skia" Version="2025.7.4" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="VL.Core" />

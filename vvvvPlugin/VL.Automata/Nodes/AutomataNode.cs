@@ -24,8 +24,10 @@ namespace VL.Automata;
 // pure edit-time solution editing through IDevSession.Current.
 //
 // 'Path' points at a .automata file (same JSON as the cables op). 'Editor' is the
-// editor as a Skia ILayer; wire it into a renderer (Space = DIPTopLeft). Editing
-// reloads the engine and saves the file.
+// editor as a Skia ILayer; wire it straight into a renderer — it forces itself into
+// DIPTopLeft space (TopLeftSpaceLayer), so it renders correctly in the renderer's
+// default Normalized Space with no setting to change. Editing reloads the engine and
+// saves the file.
 [ProcessNode(Name = "Automata", Category = "Automata")]
 public class AutomataNode : IDisposable
 {
@@ -39,6 +41,15 @@ public class AutomataNode : IDisposable
     // ILayer directly — no ToSkiaLayer node needed in the patch. Held per instance
     // because it owns the Skia render state.
     private readonly ToSkiaLayer _toSkia = new();
+    // Forces the editor layer into DIPTopLeft space, so it renders 1:1 from the
+    // top-left in the renderer's *default* Normalized space — the user needn't change
+    // the renderer's Space. This is VL.Skia's own space-setting layer (the C# node
+    // behind "SetSpace"): unlike a render-only wrapper, its Notify path also re-derives
+    // the mouse PositionInWorldSpace for the new space (ToSkiaLayer reads that, not the
+    // caller transform), so visuals *and* input line up. Wraps _toSkia once; _toSkia
+    // is still updated every frame to refresh the ImGui draw data.
+    private readonly SetSpaceUpstream2 _editorSpace = new();
+    private readonly ILayer _editorLayer;
     private AutomataEditorWidget? _editor;
     private string _loadedPath = "\0"; // sentinel so first Update always loads
     private bool _docDirty;
@@ -53,7 +64,13 @@ public class AutomataNode : IDisposable
     // document edit) when this actually changes, never every frame.
     private string _firePinsSignature = "\0";
 
-    public AutomataNode(NodeContext nodeContext) => _nc = nodeContext;
+    public AutomataNode(NodeContext nodeContext)
+    {
+        _nc = nodeContext;
+        // Wrap _toSkia so the output layer is always in DIPTopLeft space. The wrapper
+        // recomputes its transform from the caller each frame, so this one call is enough.
+        _editorSpace.Update(_toSkia, out _editorLayer, CommonSpace.DIPTopLeft);
+    }
 
     public void Update(
         string? path,
@@ -127,10 +144,19 @@ public class AutomataNode : IDisposable
         regionActive = regions.Select(r => _engine.RegionActive(r.Id)).ToSpread();
         regionIds = regions.Select(r => r.Id).ToSpread();
 
-        // Wrap the ImGui widget into a Skia layer for direct output.
-        editor = _editor is null
-            ? null
-            : _toSkia.Update(_editor.Widget, dockingEnabled: false, fonts: Spread<FontConfig>.Empty, fullscreenWindow: false, Style: null);
+        // Wrap the ImGui widget into a Skia layer for direct output. _toSkia.Update
+        // refreshes the ImGui draw data; the output is _editorLayer (_toSkia wrapped in
+        // SetSpaceUpstream2), which forces DIPTopLeft space so it renders — and takes
+        // input — correctly in the renderer's default Normalized space.
+        if (_editor is null)
+        {
+            editor = null;
+        }
+        else
+        {
+            _toSkia.Update(_editor.Widget, dockingEnabled: false, fonts: Spread<FontConfig>.Empty, fullscreenWindow: false, Style: null);
+            editor = _editorLayer;
+        }
     }
 
     private void EnsureLoaded(string path)

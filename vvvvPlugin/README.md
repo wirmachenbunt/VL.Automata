@@ -63,9 +63,12 @@ straight into a renderer:
 Automata.Editor  →  Skia renderer / RenderWindow
 ```
 
-**Renderer setting:** set the renderer's **Space** to **`DIPTopLeft`** so ImGui
-renders 1:1 from the top-left. (The renderer's default space is centered/normalized,
-which puts the editor in a corner at half scale.)
+**No renderer setting needed.** The node forces the layer into **`DIPTopLeft`** space
+internally (VL.Skia's `SetSpaceUpstream2`), so both rendering **and mouse input** work
+1:1 from the top-left even with the renderer's **default** `Normalized` Space.
+(Previously you had to set the renderer's Space to `DIPTopLeft` by hand, otherwise the
+editor showed only in the bottom-right quarter at half scale — that is now handled by
+the node.)
 
 Editing the graph mutates the document live: the engine reloads (keeping the
 active state valid) and the `.automata` file is saved. Interactions:
@@ -94,7 +97,8 @@ in-progress transition (amber) are highlighted live from the running engine.
    `.csproj`).
 3. Drop the **Automata** node (category `Automata`).
 4. Set `Path` to a `.automata` file (copy `Demo.automata`), wire the `Editor`
-   layer straight into a renderer / RenderWindow to open the editor window.
+   layer straight into a renderer / RenderWindow to open the editor window (no
+   renderer Space change needed — the layer handles it).
 5. Toggle `Advance` to run; bang a transition's pin under `Fire` to change state;
    watch `Active State` / `State Frames` / `Transition Countdown` / `Region Active`.
 
@@ -106,6 +110,8 @@ ProcessNode. The per-transition `Fire` pins are driven by the vvvv solution API
 
 - Engine: ported and unit-tested (27 parity checks against the cables logic).
 - `[ProcessNode]` + editor: confirmed working in gamma (referenced project); the
-  editor renders via ILayer into a renderer (Space = DIPTopLeft).
+  editor renders via ILayer into a renderer. It forces its own DIPTopLeft space
+  (VL.Skia's `SetSpaceUpstream2`) so a **default** (Normalized) renderer shows it and
+  takes mouse input correctly — **confirmed in gamma**, no renderer Space change needed.
 - Full editor interactions (states, transitions, regions, rename, frames, delete)
   implemented — pending on-screen verification against the cables editor.

@@ -103,9 +103,35 @@ pin names), plus region activity as aligned `Region Active` / `Region Ids` sprea
   outputs a **`VL.Skia.ILayer`** on the `Editor` pin, so the patch wires it straight
   into a renderer — no `ToSkiaLayer` node needed.
   `_toSkia.Update(widget, dockingEnabled:false, fonts:Spread<FontConfig>.Empty, fullscreenWindow:false, Style:null)`.
-- **The renderer's `Space` MUST be `DIPTopLeft`.** Its default space is
-  centered/normalized, which renders ImGui at ~half scale in the bottom-right
-  quarter. This cost us a debugging session — see the diagnostics we removed.
+- **The layer forces its own `DIPTopLeft` space — the renderer needs no setting.**
+  We wrap `_toSkia` in VL.Skia's **`SetSpaceUpstream2`** (the C# node behind the "SetSpace"
+  patch node, in `VL.Core.Skia/Transform.cs`, namespace `VL.Skia`): `_editorSpace.Update(
+  _toSkia, out _editorLayer, CommonSpace.DIPTopLeft)`. So the editor renders 1:1 top-left
+  even in the renderer's *default* `Normalized` Space.
+  - **Don't hand-roll a render-only wrapper — input won't follow.** We first wrapped
+    `_toSkia` in our own layer that only overrode `caller.Transformation` on `Render`.
+    Visuals moved to the top-left correctly, but **mouse interaction was inverted-offset**
+    (you had to click the bottom-right quarter to hit a top-left element). Reason:
+    `ToSkiaLayer.Notify` **ignores `caller`** — it feeds ImGui
+    `mouseNotification.PositionInWorldSpace.FromHectoToImGui()` (see
+    `VL.ImGui/src/Helper/RenderHelper.cs`), and `PositionInWorldSpace` was already computed
+    by the renderer in **Normalized** space. Fixing render alone leaves input in the old
+    space. `SetSpaceUpstream2.Notify` handles this: it re-wraps the notification's *sender*
+    (`IntermediateTransformNotificationSender`) with the **inverse** of the DIPTopLeft
+    matrix, so `PositionInWorldSpace` is re-derived from the raw pixel `Position` for the
+    new space. That sender type is `internal`, which is the other reason to use the library
+    layer rather than reimplement it.
+  - Why any of this is needed: `ToSkiaLayer.Render` draws ImGui through the **incoming**
+    `caller.Transformation`, but always sizes ImGui in raw viewport **pixels**
+    (`io.DisplaySize = ViewportBounds`). So it only lines up when `caller.Transformation`
+    is the DIPTopLeft matrix. In the default Normalized space (origin centered, height =
+    2 units) ImGui is drawn through a centered/half-scale matrix → bottom-right quarter.
+    This used to require setting the renderer's Space to `DIPTopLeft` by hand.
+  - The DIPTopLeft matrix (what `SetSpaceUpstream2` applies) = uniform scale `Scaling·100`
+    (one unit = 100 DIP), origin at `ViewportBounds` top-left — see
+    `VL.Core.Skia/CallerInfoExtensions.cs` (`GetWithinCommonSpaceTransformation`, `internal`)
+    + `Enums.cs` (`CommonSpace`). `SetSpaceUpstream2` recomputes it from the caller every
+    frame, so one `Update` call at construction is enough.
 - The editor widget pins its ImGui window to fill the canvas: `SetNextWindowPos(Vector2.Zero)`
   + `SetNextWindowSize(io.DisplaySize)` with no decorations. Use `(0,0)` (canvas
   top-left), NOT `GetMainViewport().Pos` (that's an OS-desktop offset for a

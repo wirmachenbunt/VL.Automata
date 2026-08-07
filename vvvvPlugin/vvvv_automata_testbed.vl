@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document xmlns:p="property" xmlns:r="reflection" Id="Oqk5soxHv2eO7NyoO6WJAZ" LanguageVersion="2025.7.4" Version="0.128">
+  <NugetDependency Id="Glep2o13pdEOfPa7NC89qW" Location="VL.CoreLib" Version="2025.7.4" />
+  <Patch Id="UEmTAFWf6U8LlHO5aih9k4">
+    <Canvas Id="Qd4Xfv0jIryPxoBbpAGWZq" DefaultCategory="Main" BordersChecked="false" CanvasType="FullCategory" />
+    <!--
+
+    ************************ Application ************************
+
+-->
+    <Node Name="Application" Bounds="100,100" Id="HuUlCM2X46xLHw3fywkEng">
+      <p:NodeReference>
+        <Choice Kind="ContainerDefinition" Name="Process" />
+        <CategoryReference Kind="Category" Name="Primitive" />
+      </p:NodeReference>
+      <Patch Id="V6fa6178mEJQDJG01eWJ54">
+        <Canvas Id="J3nQm2foXSfQQXC0gHo2nv" CanvasType="Group">
+          <Node Bounds="315,460,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
+            <p:NodeReference LastCategoryFullName="Graphics.Skia" LastDependency="VL.Skia.vl">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="Renderer" />
+            </p:NodeReference>
+            <Pin Id="CzCivbJalKuLeMJmJD35cX" Name="Node Context" Kind="InputPin" IsHidden="true" />
+            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="287, 77, 966, 610" IsHidden="true" />
+            <Pin Id="V0zdMTYkBsbPisxKJyjcd8" Name="Save Bounds" Kind="InputPin" IsHidden="true" />
+            <Pin Id="VBeIPlDcK0TNMHppyey4ZL" Name="Bound to Document" Kind="InputPin" IsHidden="true" />
+            <Pin Id="MKuogSfgz48MYqmiFYePUB" Name="Dialog If Document Changed" Kind="InputPin" IsHidden="true" />
+            <Pin Id="FzQLLbZGGD3N83oNcTxWzN" Name="Always On Top" Kind="InputPin" IsHidden="true" />
+            <Pin Id="K63A8vjqrbONDSQ9TbVgn2" Name="Extend Into Title Bar" Kind="InputPin" IsHidden="true" />
+            <Pin Id="EZDwJ0lihXrLub2R47ON3b" Name="Input" Kind="InputPin" />
+            <Pin Id="QBrjb8xleNCNkM9xFkHaXv" Name="Title" Kind="InputPin" />
+            <Pin Id="RqPbnZPfKhROFR8ztRxQxp" Name="Title Bar Interaction Width" Kind="InputPin" IsHidden="true" />
+            <Pin Id="D0zLEcz5As4QAFd3W9Z8Yy" Name="Color" Kind="InputPin" />
+            <Pin Id="VJhPXp3sHYzPVTh6HPmheO" Name="Clear" Kind="InputPin" />
+            <Pin Id="KoFUmYeBoJpLQ4b4iNvluT" Name="Space" Kind="InputPin" DefaultValue="Normalized" />
+            <Pin Id="AKDKTdoaYMuOXAapF0qDZ5" Name="Show Cursor" Kind="InputPin" />
+            <Pin Id="BKzPusUmGCeOaXKPZYkCG8" Name="VSync" Kind="InputPin" />
+            <Pin Id="MLcfDjpqwF2MSqWgdsrbms" Name="Commands" Kind="InputPin" IsHidden="true" />
+            <Pin Id="DaGbLeM3rAYPMk3QWNyOu4" Name="Enable Keyboard Shortcuts" Kind="InputPin" IsHidden="true" />
+            <Pin Id="Dzh7CWbmCvbQCCLqaMON71" Name="Enabled" Kind="InputPin" />
+            <Pin Id="SMNy0RCR2xSQEa18MdUFiL" Name="Form Bounds Notifications" Kind="OutputPin" IsHidden="true" />
+            <Pin Id="JCt3l20jyNvNDQyPAknrZo" Name="Form" Kind="OutputPin" />
+            <Pin Id="RnO8mYTgjU2PkvUcPIlRPj" Name="ClientBounds" Kind="OutputPin" />
+            <Pin Id="LXRFSEiHHseOnvkVmU5kqu" Name="Render Time" Kind="OutputPin" />
+          </Node>
+          <Node Bounds="135,280,185,19" Id="MPigUIUsIiLN8HVrrxYFvt">
+            <p:NodeReference LastCategoryFullName="Automata" LastDependency="VL.Automata.csproj">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="Automata" />
+            </p:NodeReference>
+            <Pin Id="MuhE3QeLriSLqUI6rkOTC2" Name="Node Context" Kind="InputPin" IsHidden="true" />
+            <Pin Id="AWNMg55Vi9xPjqtFpJ6MRo" Name="Path" Kind="InputPin" DefaultValue="" />
+            <Pin Id="IRl0UE2N2xUMY01DLCkS59" Name="Advance" Kind="InputPin" />
+            <Pin Id="BL8bdW79MeSPDBT82sSOlx" Name="Reset Target" Kind="InputPin" />
+            <Pin Id="T6XKbpYrv9DQQftJOudQfs" Name="Reset" Kind="InputPin" />
+            <Pin Id="BJuV3NS2yetOsF8N2r5h3a" Name="Active State" Kind="OutputPin" />
+            <Pin Id="LJo9xZBbv8tOIrbrBJJyj1" Name="Next State" Kind="OutputPin" />
+            <Pin Id="Oi6Ojl3hdBKL3rPA80T0VZ" Name="State Frames" Kind="OutputPin" />
+            <Pin Id="Jm8Wlc3NTRcNYbwCpwKPjX" Name="Transition Countdown" Kind="OutputPin" />
+            <Pin Id="MoU3ZMAEMlJPtQgWtyvgZG" Name="States" Kind="OutputPin" />
+            <Pin Id="TFhNl1qp21hN113Qx0njQX" Name="Transition Ids" Kind="OutputPin" />
+            <Pin Id="S7R0mWx0iGbPmXcG247mhb" Name="Transition Titles" Kind="OutputPin" />
+            <Pin Id="LZHEmR60H0sQRQHmoQ62JX" Name="Region Active" Kind="OutputPin" />
+            <Pin Id="FlmPUUUIO16L5wA8pYeJAE" Name="Region Ids" Kind="OutputPin" />
+            <Pin Id="DD2eQ1PbIPVLHUVA3rDPd4" Name="Editor" Kind="OutputPin" />
+            <Pin Id="NZpypDcBBjqLbhDF2cbWei" Name="START to state-2" Kind="InputPin" PinGroupName="Fire">
+              <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+                <Choice Kind="TypeFlag" Name="Boolean" />
+              </p:TypeAnnotation>
+            </Pin>
+          </Node>
+          <Pad Id="M5Ybw3uAICsMBlzopSJuNK" Comment="Active State" Bounds="-16,360,38,15" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="Mo7q8xa0z8WM20V5tWYmJh" Comment="Next State" Bounds="49,410,35,15" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="FaAQvYtMq7nLQyjOykeG6U" Comment="State Frames" Bounds="177,370,35,15" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="U2y0mmanHtbM0JwGN72fc9" Comment="Transition Countdown" Bounds="197,440,35,15" ShowValueBox="true" isIOBox="true" />
+          <Node Bounds="283,201,65,19" Id="BChSH2zS6LQPEjXGKqct9b">
+            <p:NodeReference LastCategoryFullName="IO" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="File" />
+            </p:NodeReference>
+            <Pin Id="HMqn8Or4NaQPRrv3FTHDGK" Name="Node Context" Kind="InputPin" IsHidden="true" />
+            <Pin Id="LltOwGktHEiQSB0yF8ECWC" Name="File Path" Kind="InputPin" />
+            <Pin Id="FyYqKxusx0FOGCTKsiVxiE" Name="File Mode" Kind="InputPin" />
+            <Pin Id="T0BUshrvfTdLaJ8mVKObol" Name="File Access" Kind="InputPin" />
+            <Pin Id="GfzEq3Ah4PoLmuXfB79QvZ" Name="File Share" Kind="InputPin" />
+            <Pin Id="Hb7JaFeXeiTNtmIrhNT43B" Name="Result" Kind="OutputPin" />
+          </Node>
+        </Canvas>
+        <Patch Id="E5lUQ1tTxo7PzUDY5hwxkn" Name="Create" />
+        <Patch Id="EYvNKw8whziMBUu3qNUidj" Name="Update" />
+        <ProcessDefinition Id="MyFsGYWnuMELq7hoI2TNkz">
+          <Fragment Id="K353XV32NLLPnLG8MXJpuf" Patch="E5lUQ1tTxo7PzUDY5hwxkn" Enabled="true" />
+          <Fragment Id="PMQHxyKaE5YQRb1ANIAMXa" Patch="EYvNKw8whziMBUu3qNUidj" Enabled="true" />
+        </ProcessDefinition>
+        <Link Id="HDbR825SMFgMvlZnOStywH" Ids="DD2eQ1PbIPVLHUVA3rDPd4,EZDwJ0lihXrLub2R47ON3b" />
+        <Link Id="OoyUcPGr1qYOBILUHinXXm" Ids="BJuV3NS2yetOsF8N2r5h3a,M5Ybw3uAICsMBlzopSJuNK" />
+        <Link Id="QvWA4zyeywMMwDm3kc8Ot5" Ids="LJo9xZBbv8tOIrbrBJJyj1,Mo7q8xa0z8WM20V5tWYmJh" />
+        <Link Id="RjdK3SK5j7ZOQJJUMyr8nE" Ids="Oi6Ojl3hdBKL3rPA80T0VZ,FaAQvYtMq7nLQyjOykeG6U" />
+        <Link Id="KihiwncjfENMG5k6tAiBWa" Ids="Jm8Wlc3NTRcNYbwCpwKPjX,U2y0mmanHtbM0JwGN72fc9" />
+      </Patch>
+    </Node>
+  </Patch>
+  <NugetDependency Id="QRLbuHQSnx4Oh1MwFhxdPp" Location="VL.Skia" Version="2025.7.4" />
+  <ProjectDependency Location="./VL.Automata/VL.Automata.csproj" />
+</Document>

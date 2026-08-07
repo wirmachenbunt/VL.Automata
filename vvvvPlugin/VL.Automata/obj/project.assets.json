@@ -2127,7 +2127,7 @@
           }
         }
       },
-      "VL.Core/2025.7.3-0015-g49df5281c9": {
+      "VL.Core/2025.7.4": {
         "type": "package",
         "dependencies": {
           "CommunityToolkit.HighPerformance": "8.2.2",
@@ -2154,10 +2154,10 @@
           }
         }
       },
-      "VL.Core.Commands/2025.7.3-0015-g49df5281c9": {
+      "VL.Core.Commands/2025.7.4": {
         "type": "package",
         "dependencies": {
-          "VL.Core": "2025.7.3-0015-g49df5281c9"
+          "VL.Core": "2025.7.4"
         },
         "compile": {
           "lib/net8.0/VL.Core.Commands.dll": {
@@ -2170,14 +2170,14 @@
           }
         }
       },
-      "VL.Core.Skia/2025.7.3-0015-g49df5281c9": {
+      "VL.Core.Skia/2025.7.4": {
         "type": "package",
         "dependencies": {
           "SkiaSharp": "2.88.8",
           "SkiaSharp.Svg": "1.60.0",
           "System.Drawing.Common": "8.0.0",
           "Topten.RichTextKit": "0.4.167",
-          "VL.Core": "2025.7.3-0015-g49df5281c9"
+          "VL.Core": "2025.7.4"
         },
         "compile": {
           "lib/net8.0/VL.Core.Skia.dll": {
@@ -2216,10 +2216,10 @@
           }
         }
       },
-      "VL.Core.Skia.Windows/2025.7.3-0015-g49df5281c9": {
+      "VL.Core.Skia.Windows/2025.7.4": {
         "type": "package",
         "dependencies": {
-          "VL.Core.Skia": "2025.7.3-0015-g49df5281c9"
+          "VL.Core.Skia": "2025.7.4"
         },
         "compile": {
           "lib/net8.0-windows7.0/VL.Core.Skia.Windows.dll": {
@@ -2235,15 +2235,15 @@
           "Microsoft.WindowsDesktop.App.WindowsForms"
         ]
       },
-      "VL.CoreLib/2025.7.3-0015-g49df5281c9": {
+      "VL.CoreLib/2025.7.4": {
         "type": "package",
         "dependencies": {
           "MathNet.Numerics": "5.0.0",
           "Newtonsoft.Json": "13.0.3",
           "System.IO.Ports": "8.0.0",
           "System.Text.Json": "8.0.5",
-          "VL.Core": "2025.7.3-0015-g49df5281c9",
-          "VL.Serialization.Raw": "2025.7.3-0015-g49df5281c9"
+          "VL.Core": "2025.7.4",
+          "VL.Serialization.Raw": "2025.7.4"
         },
         "compile": {
           "lib/net8.0/VL.CoreLib.dll": {
@@ -2256,10 +2256,10 @@
           }
         }
       },
-      "VL.ImGui/2025.7.3-0015-g49df5281c9": {
+      "VL.ImGui/2025.7.4": {
         "type": "package",
         "dependencies": {
-          "VL.CoreLib": "2025.7.3-0015-g49df5281c9"
+          "VL.CoreLib": "2025.7.4"
         },
         "compile": {
           "lib/net8.0/ImGui.NET.dll": {
@@ -2288,11 +2288,11 @@
           }
         }
       },
-      "VL.ImGui.Skia/2025.7.3-0015-g49df5281c9": {
+      "VL.ImGui.Skia/2025.7.4": {
         "type": "package",
         "dependencies": {
-          "VL.ImGui": "2025.7.3-0015-g49df5281c9",
-          "VL.Skia": "2025.7.3-0015-g49df5281c9"
+          "VL.ImGui": "2025.7.4",
+          "VL.Skia": "2025.7.4"
         },
         "compile": {
           "lib/net8.0-windows7.0/VL.ImGui.Skia.dll": {
@@ -2305,10 +2305,10 @@
           }
         }
       },
-      "VL.Serialization.Raw/2025.7.3-0015-g49df5281c9": {
+      "VL.Serialization.Raw/2025.7.4": {
         "type": "package",
         "dependencies": {
-          "VL.Core": "2025.7.3-0015-g49df5281c9"
+          "VL.Core": "2025.7.4"
         },
         "compile": {
           "lib/net8.0/VL.Serialization.Raw.dll": {
@@ -2321,15 +2321,15 @@
           }
         }
       },
-      "VL.Skia/2025.7.3-0015-g49df5281c9": {
+      "VL.Skia/2025.7.4": {
         "type": "package",
         "dependencies": {
           "SharpDX.Direct3D11": "4.2.0",
           "SkiaSharp.Skottie": "2.88.6",
-          "VL.Core": "2025.7.3-0015-g49df5281c9",
-          "VL.Core.Commands": "2025.7.3-0015-g49df5281c9",
-          "VL.Core.Skia.Windows": "2025.7.3-0015-g49df5281c9",
-          "VL.CoreLib": "2025.7.3-0015-g49df5281c9"
+          "VL.Core": "2025.7.4",
+          "VL.Core.Commands": "2025.7.4",
+          "VL.Core.Skia.Windows": "2025.7.4",
+          "VL.CoreLib": "2025.7.4"
         },
         "compile": {
           "lib/net8.0-windows7.0/VL.Skia.dll": {
@@ -7244,38 +7244,40 @@
         "topten.richtextkit.nuspec"
       ]
     },
-    "VL.Core/2025.7.3-0015-g49df5281c9": {
-      "sha512": "sva7d39kTqmBJ1e03EoBew++CZMk4YOuM1zoRvbsyBN4fy0fAlsLjyFrvk0s75WQXpadGRbjN1g/gjXcjPGQTw==",
+    "VL.Core/2025.7.4": {
+      "sha512": "gc0jbvbhBwCDnqj548kSZetIemO0ShL4t7OeKDR1NGnrIL8uJg8FbzPLQECUaDZJrNGc2xFCM1tc8bUI6egZFA==",
       "type": "package",
-      "path": "vl.core/2025.7.3-0015-g49df5281c9",
+      "path": "vl.core/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "lib/net8.0/VL.Core.dll",
         "lib/net8.0/VL.Core.xml",
         "nugeticon.png",
-        "vl.core.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.core.2025.7.4.nupkg.sha512",
         "vl.core.nuspec"
       ]
     },
-    "VL.Core.Commands/2025.7.3-0015-g49df5281c9": {
-      "sha512": "Ohb4o4idwlhL5CcrT3bV7N7WO2c0HI9GJPumuSQs8hQ57YVunHw0f4J7i5+hPyTJF56+ZffsfouRTE4Y/eEPMw==",
+    "VL.Core.Commands/2025.7.4": {
+      "sha512": "0ANattbWYXuJyR9oNbCEOmkCGe/x5bOLrr9+jEukNAjq9bCxX6Cy9yC1NAfAvIMbaLG3gTObriqGndNLVrNrtA==",
       "type": "package",
-      "path": "vl.core.commands/2025.7.3-0015-g49df5281c9",
+      "path": "vl.core.commands/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "VL.Core.Commands.vl",
         "help/HowTo Customize keyboard shortcuts on render windows.vl",
         "lib/net8.0/VL.Core.Commands.dll",
         "lib/net8.0/VL.Core.Commands.xml",
         "nugeticon.png",
-        "vl.core.commands.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.core.commands.2025.7.4.nupkg.sha512",
         "vl.core.commands.nuspec"
       ]
     },
-    "VL.Core.Skia/2025.7.3-0015-g49df5281c9": {
-      "sha512": "ytwCNxCDcdRlhl5RjJ4eF4s5jMsnz2/E6MVpXrn1oEGC+rU+X8St+jgSV2eNWgGMsQqT92UzNlTUBsSsOJvlHg==",
+    "VL.Core.Skia/2025.7.4": {
+      "sha512": "iAAl/byl31+69zX3FlobXXHw86I85LR7KpWe5jCB19pTWZGaHtux/6fBM9r6DEbga9c+EvGkzGcq46pbhmonUA==",
       "type": "package",
-      "path": "vl.core.skia/2025.7.3-0015-g49df5281c9",
+      "path": "vl.core.skia/2025.7.4",
       "files": [
         ".nupkg.metadata",
         "lib/net8.0/VL.Core.Skia.dll",
@@ -7287,29 +7289,31 @@
         "runtimes/win-x64/native/d3dcompiler_47.dll",
         "runtimes/win-x64/native/libEGL.dll",
         "runtimes/win-x64/native/libGLESv2.dll",
-        "vl.core.skia.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.core.skia.2025.7.4.nupkg.sha512",
         "vl.core.skia.nuspec"
       ]
     },
-    "VL.Core.Skia.Windows/2025.7.3-0015-g49df5281c9": {
-      "sha512": "oZ7cOIORiIFjxvSbCEkrrNAatW1W+hVqsLRglQxmgWqczo4tDn5HSqhVYiH2VRMgGTdRw566pJgCmeDdJGZ/Yg==",
+    "VL.Core.Skia.Windows/2025.7.4": {
+      "sha512": "QWNNRwbdnHpyk9wQhcHXD5gzMjmDrsy0v06EQrzxtJrDpgIQzWNUvwPoLptnJ2ddMmA0TPTvu2RU1AgQXLuV9g==",
       "type": "package",
-      "path": "vl.core.skia.windows/2025.7.3-0015-g49df5281c9",
+      "path": "vl.core.skia.windows/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "lib/net8.0-windows7.0/VL.Core.Skia.Windows.dll",
         "lib/net8.0-windows7.0/VL.Core.Skia.Windows.xml",
         "nugeticon.png",
-        "vl.core.skia.windows.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.core.skia.windows.2025.7.4.nupkg.sha512",
         "vl.core.skia.windows.nuspec"
       ]
     },
-    "VL.CoreLib/2025.7.3-0015-g49df5281c9": {
-      "sha512": "CEdG2ka9OSy6wXZT9QkH15zNqrVpygaGoMKW/c3RE2xn8BHTj1bB+a+T5JQ48C63gfLqvBe04YHrabJJUBZrxw==",
+    "VL.CoreLib/2025.7.4": {
+      "sha512": "Oe9hhQju/QxC+Gh4LHe1bkPzOPaCV2SUfNqheW/CIO9RJgX/49GphisebNRGs8ShA6EutxeySG0er7aj2gtOeg==",
       "type": "package",
-      "path": "vl.corelib/2025.7.3-0015-g49df5281c9",
+      "path": "vl.corelib/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "AppControl.vl",
         "Attributes.vl",
         "Audio.vl",
@@ -7569,21 +7573,23 @@
         "help/System/Logging/csharp/Example Configuration.Utils/Example Configuration.Utils.csproj",
         "help/System/Logging/csharp/Example Configuration.Utils/StaticUtils.cs",
         "help/System/Reference ToImage.vl",
+        "help/Transform/HowTo Freely rotate an object in all directions.vl",
         "help/Transform/HowTo Map a projection using Homography.vl",
         "help/Transform/HowTo Transform objects to always face the camera.vl",
         "lib/net8.0/VL.CoreLib.dll",
         "lib/net8.0/VL.CoreLib.xml",
         "nugeticon.png",
-        "vl.corelib.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.corelib.2025.7.4.nupkg.sha512",
         "vl.corelib.nuspec"
       ]
     },
-    "VL.ImGui/2025.7.3-0015-g49df5281c9": {
-      "sha512": "sQs2XwQ5pDWgF97XHicNWi1YcPG3Wf+n9qgEUnhqP7qYj5xfLUxCVZynrLxeslh+kVs8i5nFSiQ2Hj3SxKc8/A==",
+    "VL.ImGui/2025.7.4": {
+      "sha512": "fkqEuKiVaSwaWAWCfsAw5EqvM6w48Dky259M9pxsLHxcUka84SAOnsU32tTIdh65zBGMvjHxDk8nChmRnBNDhQ==",
       "type": "package",
-      "path": "vl.imgui/2025.7.3-0015-g49df5281c9",
+      "path": "vl.imgui/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "VL.ImGui.vl",
         "help/Advanced/Example Interoperating with Skia 2.vl",
         "help/Advanced/Example Interoperating with Skia.vl",
@@ -7685,45 +7691,47 @@
         "nugeticon.png",
         "runtimes/win-arm64/native/cimgui.dll",
         "runtimes/win-x64/native/cimgui.dll",
-        "vl.imgui.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.imgui.2025.7.4.nupkg.sha512",
         "vl.imgui.nuspec"
       ]
     },
-    "VL.ImGui.Skia/2025.7.3-0015-g49df5281c9": {
-      "sha512": "D3mN4CG94V68C5g8CUyK8GHlYGU/KsNx53iYmESSXARH+7uS4pLcNxIBFJSqwqE56VDC3cd3EBoAoZVAmQ4/hQ==",
+    "VL.ImGui.Skia/2025.7.4": {
+      "sha512": "pZFzV7hk+kzXZweulGJFXz1vWneThVZcQvYTIjbxNto4de9NRFiiEYdD1SChc6vdpzDtzDBcn2hWaf9jI/mtXg==",
       "type": "package",
-      "path": "vl.imgui.skia/2025.7.3-0015-g49df5281c9",
+      "path": "vl.imgui.skia/2025.7.4",
       "files": [
         ".nupkg.metadata",
         "VL.ImGui.Skia.vl",
         "lib/net8.0-windows7.0/VL.ImGui.Skia.dll",
         "lib/net8.0-windows7.0/VL.ImGui.Skia.xml",
         "nugeticon.png",
-        "vl.imgui.skia.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.imgui.skia.2025.7.4.nupkg.sha512",
         "vl.imgui.skia.nuspec"
       ]
     },
-    "VL.Serialization.Raw/2025.7.3-0015-g49df5281c9": {
-      "sha512": "pe34pWop597d6BFhoXclhOkJW2VaN555zFaVqrXfjAO+02UPjegVsQuATi1tiW3C7Ya3m49m0aWBA/DKtGE6ow==",
+    "VL.Serialization.Raw/2025.7.4": {
+      "sha512": "G1SgtqXN888P1F0j9p7A/uAGbMlrr7qzPd/vKhHdD6yzhUIi6PxsPUbYpPu5au6rzKjjq38RDfIfOyoj3reb4w==",
       "type": "package",
-      "path": "vl.serialization.raw/2025.7.3-0015-g49df5281c9",
+      "path": "vl.serialization.raw/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "VL.Serialization.Raw.vl",
         "help/Explanation Use Raw Serializer.vl",
         "lib/net8.0/VL.Serialization.Raw.dll",
         "lib/net8.0/VL.Serialization.Raw.xml",
         "nugeticon.png",
-        "vl.serialization.raw.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.serialization.raw.2025.7.4.nupkg.sha512",
         "vl.serialization.raw.nuspec"
       ]
     },
-    "VL.Skia/2025.7.3-0015-g49df5281c9": {
-      "sha512": "h4RzGpAWbYYjeG8arQbSNsSM36fGLrSaSvXIygoMToxDo7WJVfil/iNt+KYVvVDNUiIz4vc7t3nT38ffavBZ4Q==",
+    "VL.Skia/2025.7.4": {
+      "sha512": "bVuUrNW49gogzDJfY9+JT5Qa36xrtJ5Hxu6VKz1ncQUbTk+i3AVHYeXDfZtUA+Okq/BB2CrrpfuU8c0BvV5tBw==",
       "type": "package",
-      "path": "vl.skia/2025.7.3-0015-g49df5281c9",
+      "path": "vl.skia/2025.7.4",
       "files": [
         ".nupkg.metadata",
+        ".signature.p7s",
         "VL.Skia.vl",
         "help/Assets/LottieLogo1.json",
         "help/Assets/Street.jpg",
@@ -7875,34 +7883,33 @@
         "lib/net8.0-windows7.0/VL.Skia.dll",
         "lib/net8.0-windows7.0/VL.Skia.xml",
         "nugeticon.png",
-        "vl.skia.2025.7.3-0015-g49df5281c9.nupkg.sha512",
+        "vl.skia.2025.7.4.nupkg.sha512",
         "vl.skia.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "net8.0-windows7.0": [
-      "VL.Core >= 2025.7.3-0015-g49df5281c9",
-      "VL.ImGui >= 2025.7.3-0015-g49df5281c9",
-      "VL.ImGui.Skia >= 2025.7.3-0015-g49df5281c9"
+      "VL.Core >= 2025.7.4",
+      "VL.ImGui >= 2025.7.4",
+      "VL.ImGui.Skia >= 2025.7.4"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\chris\\.nuget\\packages\\": {}
+    "C:\\Users\\christianengler\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+      "projectUniqueName": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
       "projectName": "VL.Automata",
-      "projectPath": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
-      "packagesPath": "C:\\Users\\chris\\.nuget\\packages\\",
-      "outputPath": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
+      "projectPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+      "packagesPath": "C:\\Users\\christianengler\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
-        "C:\\Users\\chris\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
+        "C:\\Users\\christianengler\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0-windows"
@@ -7926,8 +7933,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "10.0.100"
+      }
     },
     "frameworks": {
       "net8.0-windows7.0": {
@@ -7935,15 +7941,15 @@
         "dependencies": {
           "VL.Core": {
             "target": "Package",
-            "version": "[2025.7.3-0015-g49df5281c9, )"
+            "version": "[2025.7.4, )"
           },
           "VL.ImGui": {
             "target": "Package",
-            "version": "[2025.7.3-0015-g49df5281c9, )"
+            "version": "[2025.7.4, )"
           },
           "VL.ImGui.Skia": {
             "target": "Package",
-            "version": "[2025.7.3-0015-g49df5281c9, )"
+            "version": "[2025.7.4, )"
           }
         },
         "imports": [
@@ -7962,7 +7968,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

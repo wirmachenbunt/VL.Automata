@@ -1,22 +1,21 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj": {}
+    "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj": {}
   },
   "projects": {
-    "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj": {
+    "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+        "projectUniqueName": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
         "projectName": "VL.Automata",
-        "projectPath": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
-        "packagesPath": "C:\\Users\\chris\\.nuget\\packages\\",
-        "outputPath": "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
+        "projectPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+        "packagesPath": "C:\\Users\\christianengler\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Mac\\Home\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
-          "C:\\Users\\chris\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
+          "C:\\Users\\christianengler\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
@@ -40,8 +39,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "10.0.100"
+        }
       },
       "frameworks": {
         "net8.0-windows7.0": {
@@ -49,15 +47,15 @@
           "dependencies": {
             "VL.Core": {
               "target": "Package",
-              "version": "[2025.7.3-0015-g49df5281c9, )"
+              "version": "[2025.7.4, )"
             },
             "VL.ImGui": {
               "target": "Package",
-              "version": "[2025.7.3-0015-g49df5281c9, )"
+              "version": "[2025.7.4, )"
             },
             "VL.ImGui.Skia": {
               "target": "Package",
-              "version": "[2025.7.3-0015-g49df5281c9, )"
+              "version": "[2025.7.4, )"
             }
           },
           "imports": [
@@ -76,7 +74,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
