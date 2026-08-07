@@ -209,6 +209,14 @@ widget holds the live document in memory, the pin is purely persistence.
   *widget* stays allocated but idle (`Draw` only runs from `_toSkia.Update`), so toggling the
   pin back off resumes instantly with pan/zoom intact. Default false = UI on = unchanged
   behaviour. Pin label "No UI Mode" is vvvv's acronym-aware split of the `noUIMode` param.
+- **`No Background` (inspector-only, transparent canvas).** `[Pin(Visibility =
+  PinVisibility.Optional)]` on the `noBackground` param makes it an *Inspektor-only* pin —
+  hidden on the node face, editable in the pin inspector (`PinVisibility` lives in `VL.Model`,
+  already imported; `Optional` = "user can configure the node to show this pin", i.e. the
+  vvvv hidden-pin idiom — `Hidden` would hide it from the inspector too). Wired to the editor
+  widget's `ShowBackground`. Transparency needs **both** halves dropped: the explicit
+  `dl.AddRectFilled` canvas fill *and* `ImGuiWindowFlags.NoBackground` (else ImGui paints its
+  own `WindowBg` under the skipped fill). Default false = opaque = unchanged.
 - The editor widget pins its ImGui window to fill the canvas: `SetNextWindowPos(Vector2.Zero)`
   + `SetNextWindowSize(io.DisplaySize)` with no decorations. Use `(0,0)` (canvas
   top-left), NOT `GetMainViewport().Pos` (that's an OS-desktop offset for a
@@ -270,6 +278,33 @@ widget holds the live document in memory, the pin is purely persistence.
   param), `SyncPinGroup`, `AddToPinGroup`, `GetPinGroupBuilder`.
 - corelib `help/API/Patch/HowTo Create Pins Programmatically.vl` — the canonical
   patch-side example of `ModifyPinGroup` / `PinGroupBuilder` (in the nuget cache).
+
+## Packaging / distribution (planned — not done yet)
+
+Publish as a NuGet to **nuget.org** (that's the feed vvvv's package manager reads;
+`nuget.info` is only a package *inspector*, not a host). The project is already
+`IsPackable` with a generated doc file and references the **public** VL.\* versions
+(`2025.7.4`), so `dotnet pack -c Release` produces a working package today — no factory or
+special layout needed, because `[assembly: ImportAsIs]` makes vvvv surface the
+`[ProcessNode]` straight from `lib/net8.0-windows/`.
+
+Before publishing:
+- Add package metadata to the csproj: `PackageId` (`VL.Automata`), `Version`, `Authors`,
+  `Description`, `PackageTags` (`vl vvvv …` — the `vl`/`vvvv` tags drive discoverability),
+  license, `RepositoryUrl`, `PackageReadmeFile`.
+- Keep the VL.\* dependency versions on **public nuget.org** builds (plain `2025.7.x`), never
+  a TeamCity `-NNNN-g…` build — consumers can't restore those.
+- Publish with `dotnet nuget push … --source https://api.nuget.org/v3/index.json` (needs an
+  API key); users install via `nuget install VL.Automata` in the gamma commandline.
+
+**Must run on both x64 and ARM (ARM64 Windows).** Our own assembly is **AnyCPU / pure IL**,
+so it's already architecture-neutral — keep it that way: **no `PlatformTarget`, no
+`RuntimeIdentifier`/RID pinning, no native code of our own** (we have none). `EnableWindowsTargeting`
+doesn't constrain the architecture. Cross-arch then hinges entirely on the **native
+dependencies** — SkiaSharp + cimgui, pulled transitively via `VL.Skia` / `VL.ImGui.Skia` —
+shipping `win-arm64` natives alongside `win-x64`. Action item at pack time: confirm those
+packages carry arm64 runtimes (check their `runtimes/win-arm64/native/…`), and smoke-test the
+node on an ARM64 gamma. If a native dep lacks arm64, that's the blocker to chase, not our DLL.
 
 ## Open / possible future work
 

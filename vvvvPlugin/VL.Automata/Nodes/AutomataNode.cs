@@ -119,6 +119,12 @@ public class AutomataNode : IDisposable
         // the per-frame editor cost (the single biggest one in the node). Default false =
         // UI on = the node behaves exactly as before.
         bool noUIMode,
+        // Inspector-only switch (PinVisibility.Optional → hidden on the node face, editable in
+        // the Inspektor). When true the editor canvas is drawn transparent — both the explicit
+        // fill and ImGui's own window background are skipped — so the renderer shows through
+        // whatever is behind it. Default false = opaque background = unchanged.
+        [Pin(Visibility = PinVisibility.Optional)]
+        bool noBackground,
         // Must be the *concrete* Dictionary<string, object> — VL's dictionary-pin-group
         // codegen only recognises that exact shape; an IReadOnlyDictionary<> (or a bool
         // value type) drops to a path that emits an untyped Spread and the patch fails to
@@ -220,6 +226,7 @@ public class AutomataNode : IDisposable
         }
         else
         {
+            _editor.ShowBackground = !noBackground;
             _toSkia.Update(_editor.Widget, dockingEnabled: false, fonts: Spread<FontConfig>.Empty, fullscreenWindow: false, Style: null);
             editor = _editorLayer;
         }

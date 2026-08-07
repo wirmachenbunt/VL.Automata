@@ -15,13 +15,13 @@
       </p:NodeReference>
       <Patch Id="V6fa6178mEJQDJG01eWJ54">
         <Canvas Id="J3nQm2foXSfQQXC0gHo2nv" CanvasType="Group">
-          <Node Bounds="398,250,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
+          <Node Bounds="521,320,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
             <p:NodeReference LastCategoryFullName="Graphics.Skia" LastDependency="VL.Skia.vl">
               <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
               <Choice Kind="ProcessAppFlag" Name="Renderer" />
             </p:NodeReference>
             <Pin Id="CzCivbJalKuLeMJmJD35cX" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="1801, 810, 1100, 720" IsHidden="true" />
+            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="200, 68, 1348, 784" IsHidden="true" />
             <Pin Id="V0zdMTYkBsbPisxKJyjcd8" Name="Save Bounds" Kind="InputPin" IsHidden="true" />
             <Pin Id="VBeIPlDcK0TNMHppyey4ZL" Name="Bound to Document" Kind="InputPin" IsHidden="true" />
             <Pin Id="MKuogSfgz48MYqmiFYePUB" Name="Dialog If Document Changed" Kind="InputPin" IsHidden="true" />
@@ -64,7 +64,7 @@
               <Choice Kind="ProcessAppFlag" Name="Automata" />
             </p:NodeReference>
             <Pin Id="HJ7V3sY5NGnQErM2Y6WfsJ" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="E70N6LLCXTQM5T8mI0NqEZ" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-fd0808a7&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:463.89996802806854,&quot;y&quot;:267.70003640651703},{&quot;id&quot;:&quot;s-856cef0c&quot;,&quot;label&quot;:&quot;Menu&quot;,&quot;x&quot;:1492.2000410556793,&quot;y&quot;:504.79999339580536},{&quot;id&quot;:&quot;s-990e5e06&quot;,&quot;label&quot;:&quot;Choice02&quot;,&quot;x&quot;:468.1000270843506,&quot;y&quot;:974.5000009536743}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-04f936cd&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-7a8ce818&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-d8d6f5ca&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ac7c2d2c&quot;,&quot;from&quot;:&quot;s-856cef0c&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-e864f2c0&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-fd0808a7&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[{&quot;id&quot;:&quot;r-f0c17927&quot;,&quot;x&quot;:1601,&quot;y&quot;:581,&quot;radius&quot;:464.8655700683594,&quot;title&quot;:&quot;MainRegion&quot;}]}" />
+            <Pin Id="E70N6LLCXTQM5T8mI0NqEZ" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-fd0808a7&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:409.6959339976311,&quot;y&quot;:167.54741841554642},{&quot;id&quot;:&quot;s-856cef0c&quot;,&quot;label&quot;:&quot;Menu&quot;,&quot;x&quot;:1288.4150483608246,&quot;y&quot;:797.7143104672432},{&quot;id&quot;:&quot;s-990e5e06&quot;,&quot;label&quot;:&quot;Choice02&quot;,&quot;x&quot;:32.67529571056366,&quot;y&quot;:835.3408774137497}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-04f936cd&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-7a8ce818&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-d8d6f5ca&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ac7c2d2c&quot;,&quot;from&quot;:&quot;s-856cef0c&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-e864f2c0&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-fd0808a7&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[{&quot;id&quot;:&quot;r-f0c17927&quot;,&quot;x&quot;:132.99868774414062,&quot;y&quot;:-137.4423828125,&quot;radius&quot;:464.8655700683594,&quot;title&quot;:&quot;MainRegion&quot;}]}" />
             <Pin Id="RgbdYeOxjXVNd0Rfy7He4u" Name="Reset Target" Kind="InputPin" />
             <Pin Id="CevVNNxmT5mMs1Ana8AeAL" Name="Reset" Kind="InputPin" />
             <Pin Id="AjpCrN8peFIOzdq0i2TaJ5" Name="Active State" Kind="OutputPin" />
@@ -77,27 +77,28 @@
             <Pin Id="VNFinARa1anNGbKrktsH9a" Name="Region Names" Kind="OutputPin" />
             <Pin Id="PeNf0w8WHnjPsnEHE3KJvY" Name="Editor" Kind="OutputPin" />
             <Pin Id="MWj8J77s5qEO8RwO5JgDCG" Name="No UIMode" Kind="InputPin" />
-            <Pin Id="CjAOx3j2EFkNrZGSNqW1q5" Name="START to Menu" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="HbFlUfbnwSROXFzwNIvGsx" Name="No Background" Kind="InputPin" DefaultValue="False" IsHidden="true" />
+            <Pin Id="THaPLH8kwvoQU5ibnxfnIx" Name="START to Menu" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="N9HPuodQTTPPMB6uozjLH9" Name="START to Choice02" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="Isd3auKD6z7LK3x9Edhh7r" Name="START to Choice02" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="RK9FFaYgGuMLi4uOBa0GiX" Name="Choice02 to Menu" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="PHnM1V8sZcbN19tfzA0yF8" Name="Choice02 to Menu" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="RvVji6hTHH9NDyNd5A1pTv" Name="Menu to Choice02" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="CTfwyEBAcTnMcrE0NR6GlF" Name="Menu to Choice02" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="V74sKLejeQOQNzD6z3yYxG" Name="Choice02 to START" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="HVIMgZvZC2cPOLaG2JGaWT" Name="Choice02 to START" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
@@ -144,11 +145,9 @@
           <Fragment Id="K353XV32NLLPnLG8MXJpuf" Patch="E5lUQ1tTxo7PzUDY5hwxkn" Enabled="true" />
           <Fragment Id="PMQHxyKaE5YQRb1ANIAMXa" Patch="EYvNKw8whziMBUu3qNUidj" Enabled="true" />
         </ProcessDefinition>
-        <Link Id="USHYKoXIMOJM8MukKGr87n" Ids="PeNf0w8WHnjPsnEHE3KJvY,EZDwJ0lihXrLub2R47ON3b" />
         <Link Id="FrCNxbmYySdMscPDv7cNyo" Ids="AjpCrN8peFIOzdq0i2TaJ5,SSK8aX3xeRrNMyrDcw6XN8" />
         <Link Id="MpblV01eNepMotV9Np0Vsm" Ids="Jgns5ynETCqMwR4drdzI1N,KSbbaW8TdOFOgSkHpAx7EU" />
         <Link Id="LjRZvkLyJ67LAvWBSzBLPh" Ids="J9x032wtc6zNdULQ7zhsaj,QqmP70wifU9NkqMd9FhJd1" />
-        <Link Id="G6LZhZKbl27OdJn7sjVXK9" Ids="KqkC8mix1jgLgko4M1bK98,CjAOx3j2EFkNrZGSNqW1q5" />
         <Link Id="I3kanHktWqJMCaMboZCO1L" Ids="VNFinARa1anNGbKrktsH9a,SSU7xbj9kZJNdzJdkQrhSe" />
         <Link Id="TxEV0xrGMVcNiKmr61XQsG" Ids="Ei7kntNy7EGNJbZwgDcC3N,EOa5w4DA74gLyQjeG4lebm" />
         <Link Id="NwLksnFcv5qPQzwTcjkf7g" Ids="UQQkJcCiuPcOrqMr67zfS2,CPZADrQ1wPxN6DV05lJH2l" />
@@ -157,9 +156,12 @@
         <Link Id="FJXBFYZxrX8NS3xiwRtEUS" Ids="Lq7rDRQuDbGOZDTUUG4NUJ,CevVNNxmT5mMs1Ana8AeAL" />
         <Link Id="Khje06VJxbtMSLC7mriaFG" Ids="VFfHgzYO2FOOKLdVSUk3dw,VxeqgqVgj4fNpXZxrxdNHP" />
         <Link Id="MNVZzPtMk1YOCWfxvJnzmA" Ids="HmNHGgEdFQDNzmSrdSQGe7,MWj8J77s5qEO8RwO5JgDCG" />
+        <Link Id="J8oVGVglprELRAukFrh4Yb" Ids="PeNf0w8WHnjPsnEHE3KJvY,EZDwJ0lihXrLub2R47ON3b" />
       </Patch>
     </Node>
   </Patch>
   <NugetDependency Id="QRLbuHQSnx4Oh1MwFhxdPp" Location="VL.Skia" Version="2025.7.4" />
   <ProjectDependency Location="./VL.Automata/VL.Automata.csproj" />
+  <NugetDependency Id="NKaTuy2BAAvOycW5yysYaL" Location="VL.Stride" Version="2025.7.4" />
+  <NugetDependency Id="ES0l8VIHS5FN4255LE9bDc" Location="VL.ImGui" Version="2025.7.4" />
 </Document>

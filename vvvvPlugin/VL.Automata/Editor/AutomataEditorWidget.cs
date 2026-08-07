@@ -45,6 +45,9 @@ public sealed class AutomataEditorWidget : IDisposable
     private int _newStateCounter;
 
     public AutomataDocument Document { get; private set; }
+    // When false the canvas is drawn transparent — both the explicit fill AND ImGui's own
+    // window background are skipped — so whatever is behind the renderer shows through.
+    public bool ShowBackground = true;
     public Action? Changed;
     // Supplies the engine's current active state / pending transition for highlight.
     public Func<string?>? ActiveStateId;
@@ -117,10 +120,12 @@ public sealed class AutomataEditorWidget : IDisposable
         Vector2 display = io.DisplaySize;
         IG.SetNextWindowPos(Vector2.Zero);
         IG.SetNextWindowSize(display);
-        const ImGuiWindowFlags flags =
+        ImGuiWindowFlags flags =
             ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
             ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
             ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoBringToFrontOnFocus;
+        // Drop ImGui's own window background too, else it paints under the (skipped) fill.
+        if (!ShowBackground) flags |= ImGuiWindowFlags.NoBackground;
 
         IG.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         bool open = IG.Begin("Automata — " + _title, flags);
@@ -148,7 +153,8 @@ public sealed class AutomataEditorWidget : IDisposable
 
         Vector2 mouse = ToDoc(mouseLocal); // document coords
 
-        dl.AddRectFilled(_origin, _origin + size, Col(0.11f, 0.12f, 0.13f));
+        if (ShowBackground)
+            dl.AddRectFilled(_origin, _origin + size, Col(0.11f, 0.12f, 0.13f));
 
         DrawRegions(dl);
         DrawTransitions(dl);
