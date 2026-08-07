@@ -31,11 +31,20 @@ public sealed class AutomataEngine
     private int _stateFrames;
     private Pending? _pending;
 
+    // Bumped on every Load — i.e. whenever the states/transitions/regions sets are
+    // rebuilt. Lets consumers (the node) cache anything derived from the document
+    // (output spreads, the Fire pin group) and rebuild only when this changes, instead
+    // of re-deriving it every frame. Active-state changes don't bump it (the sets are
+    // unaffected); track ActiveStateId separately for anything that depends on it.
+    private int _version;
+
     private List<TransitionPin> _transitionPins = new();
     private List<RegionPin> _regionPins = new();
     private List<ResetTarget> _resetTargets = new();
 
     // ---- Outputs (read back onto pins) --------------------------------------
+    // Rebuild-generation of the document-derived sets (see _version). Changes only on Load.
+    public int Version => _version;
     public string? ActiveStateId => _activeStateId;
     // Id of the transition currently in progress (multi-frame), for editor highlight.
     public string? PendingTransitionId => _pending?.Id;
@@ -64,6 +73,7 @@ public sealed class AutomataEngine
     public void Load(AutomataDocument doc)
     {
         _doc = doc ?? new AutomataDocument();
+        _version++; // the document-derived sets below are being rebuilt
         BuildResetTargets();
         BuildTransitionPins();
         BuildRegionPins();

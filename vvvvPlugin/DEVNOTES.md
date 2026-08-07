@@ -85,6 +85,25 @@ Outputs include `Transition Titles` (they match the `Fire` pin names), plus regi
 activity as aligned `Region Active` / `Region Names` spreads.
 `Editor` is a **Skia `ILayer`** (see below). Full pin table in README.
 
+## Per-frame allocation discipline (`AutomataEngine.Version`)
+
+`Update` runs every patch frame, so anything it re-derives there is per-frame GC garbage
+in the render loop. The rule: **derive from the document only when the document changed.**
+The engine exposes a monotonic `Version` bumped in `Load` (the only place the
+states/transitions/regions sets are rebuilt); active-state changes deliberately do *not*
+bump it. The node caches against it:
+- **Output spreads** (`states`, `transitionTitles`, `regionNames`) rebuild only when
+  `Version` moves; `regionActive` also when `ActiveStateId` moves (it depends on both the
+  region set and where the machine currently is). Spreads are immutable, so a steady node
+  returns the cached instances and allocates nothing.
+- **`SyncFirePins`** gates on `Version` instead of rebuilding an id+title signature string
+  every frame — a rename/add/remove goes through `_engine.Load` (via `_docDirty`), which
+  bumps `Version`, so it still catches title changes. It only marks itself synced *after* a
+  successful commit, so the first sync still retries until `IDevSession.Current` exists.
+
+Don't reintroduce per-frame LINQ/`ToSpread`/`string.Join` in `Update`; route new
+document-derived outputs through the same `Version` (or `ActiveStateId`) cache checks.
+
 ## Persistence: the machine is stored *in the patch* (`Data` pin), not a file
 
 We dropped the original external-`.automata`-file approach (`Path` pin + `File.Read/Write`).
@@ -181,6 +200,15 @@ widget holds the live document in memory, the pin is purely persistence.
     `VL.Core.Skia/CallerInfoExtensions.cs` (`GetWithinCommonSpaceTransformation`, `internal`)
     + `Enums.cs` (`CommonSpace`). `SetSpaceUpstream2` recomputes it from the caller every
     frame, so one `Update` call at construction is enough.
+- **`No UI Mode` (headless switch).** `_toSkia.Update` is what runs the full ImGui frame
+  each tick — `NewFrame` → our `Draw` (every `DrawList` call + all hit-testing) → draw-data
+  gen — and it runs *even when the `Editor` pin is unconnected*, since `Update` runs every
+  frame regardless. That's the single biggest per-frame cost, so the `noUIMode` input gates
+  exactly that block: when true it skips `_toSkia.Update` and outputs a null `Editor`. The
+  engine still steps and the `Fire`/output pins still work — you just lose the UI. The editor
+  *widget* stays allocated but idle (`Draw` only runs from `_toSkia.Update`), so toggling the
+  pin back off resumes instantly with pan/zoom intact. Default false = UI on = unchanged
+  behaviour. Pin label "No UI Mode" is vvvv's acronym-aware split of the `noUIMode` param.
 - The editor widget pins its ImGui window to fill the canvas: `SetNextWindowPos(Vector2.Zero)`
   + `SetNextWindowSize(io.DisplaySize)` with no decorations. Use `(0,0)` (canvas
   top-left), NOT `GetMainViewport().Pos` (that's an OS-desktop offset for a

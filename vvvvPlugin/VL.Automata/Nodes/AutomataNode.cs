@@ -82,9 +82,20 @@ public class AutomataNode : IDisposable
     // track each pin's previous value for rising-edge detection.
     private readonly Dictionary<string, string> _firePinToTransitionId = new();
     private readonly Dictionary<string, bool> _prevFirePins = new();
-    // Signature of the current transition set; the pin group is only re-synced (a
-    // document edit) when this actually changes, never every frame.
-    private string _firePinsSignature = "\0";
+    // Engine version last synced to the Fire pin group; the pin group is only re-synced
+    // (a document edit) when the engine reloads, never every frame. -1 forces a first sync.
+    private int _firePinsVersion = -1;
+
+    // Cached output spreads. Everything derived purely from the document (state labels,
+    // transition titles, region names) is rebuilt only when the engine version changes;
+    // region activity also when the active state moves. A steadily-running node (no edit,
+    // no transition settling) then allocates nothing here per frame.
+    private int _cachedVersion = -1;
+    private string? _regionActiveStateId;
+    private Spread<string> _statesCache = Spread<string>.Empty;
+    private Spread<string> _transitionTitlesCache = Spread<string>.Empty;
+    private Spread<string> _regionNamesCache = Spread<string>.Empty;
+    private Spread<float> _regionActiveCache = Spread<float>.Empty;
 
     public AutomataNode(NodeContext nodeContext)
     {
@@ -101,6 +112,13 @@ public class AutomataNode : IDisposable
         string? data,
         string? resetTarget,
         bool reset,
+        // Headless switch: when true, skip the ImGui frame + ToSkiaLayer update entirely and
+        // output a null Editor layer. The engine still steps, outputs still update and the
+        // Fire pins still drive transitions — you just don't build/draw the editor UI. Leave
+        // the Editor pin unconnected in a running/exported patch and flip this on to reclaim
+        // the per-frame editor cost (the single biggest one in the node). Default false =
+        // UI on = the node behaves exactly as before.
+        bool noUIMode,
         // Must be the *concrete* Dictionary<string, object> — VL's dictionary-pin-group
         // codegen only recognises that exact shape; an IReadOnlyDictionary<> (or a bool
         // value type) drops to a path that emits an untyped Spread and the patch fails to
@@ -158,22 +176,45 @@ public class AutomataNode : IDisposable
         if (reset && !_prevReset) _engine.Reset(resetTarget);
         _prevReset = reset;
 
-        var regions = _engine.RegionPins;
-
         activeState = _engine.ActiveState;
         nextState = _engine.NextState;
         stateFrames = _engine.StateFrames;
         transitionCountdown = (float)_engine.TransitionCountdown;
-        states = _engine.States.ToSpread();
-        transitionTitles = transitions.Select(t => t.Title).ToSpread();
-        regionActive = regions.Select(r => _engine.RegionActive(r.Id)).ToSpread();
-        regionNames = regions.Select(r => r.Name).ToSpread();
+
+        // Rebuild the document-derived output spreads only when the machine reloaded.
+        bool versionChanged = _engine.Version != _cachedVersion;
+        if (versionChanged)
+        {
+            _cachedVersion = _engine.Version;
+            _statesCache = _engine.States.ToSpread();
+            _transitionTitlesCache = transitions.Select(t => t.Title).ToSpread();
+            _regionNamesCache = _engine.RegionPins.Select(r => r.Name).ToSpread();
+        }
+
+        // Region activity also depends on the active state (which moves as transitions
+        // settle); recompute when the reload changed the region set OR the active state moved.
+        var activeId = _engine.ActiveStateId;
+        if (versionChanged || activeId != _regionActiveStateId)
+        {
+            _regionActiveStateId = activeId;
+            _regionActiveCache = _engine.RegionPins.Select(r => _engine.RegionActive(r.Id)).ToSpread();
+        }
+
+        states = _statesCache;
+        transitionTitles = _transitionTitlesCache;
+        regionActive = _regionActiveCache;
+        regionNames = _regionNamesCache;
 
         // Wrap the ImGui widget into a Skia layer for direct output. _toSkia.Update
         // refreshes the ImGui draw data; the output is _editorLayer (_toSkia wrapped in
         // SetSpaceUpstream2), which forces DIPTopLeft space so it renders — and takes
         // input — correctly in the renderer's default Normalized space.
-        if (_editor is null)
+        //
+        // No-UI mode skips this whole block: _toSkia.Update is what runs the full ImGui
+        // frame (our Draw pass + all hit-testing) each frame, so gating it is the actual
+        // saving — the widget object stays alive but idle (Draw only runs from here), so
+        // flipping noUIMode back off resumes instantly with pan/zoom intact.
+        if (_editor is null || noUIMode)
         {
             editor = null;
         }
@@ -251,12 +292,12 @@ public class AutomataNode : IDisposable
     // pins automatically.
     private void SyncFirePins(IReadOnlyList<AutomataEngine.TransitionPin> transitions)
     {
-        // Cheap change-detection: id+title of every transition. Skip if unchanged.
-        var sig = string.Join("\n", transitions.Select(t => t.Id + "\t" + t.Title));
-        if (sig == _firePinsSignature) return;
+        // The transition set (and each title, derived from state labels) only changes when
+        // the engine reloads. Skip on every other frame — no per-frame allocation/scan.
+        if (_engine.Version == _firePinsVersion) return;
 
         var solution = IDevSession.Current?.CurrentSolution;
-        if (solution is null) return; // exported app / no editor — nothing to sync
+        if (solution is null) return; // exported app / no editor — retry when a session exists
 
         var nodeId = _nc.Path.Stack.Peek();
         var boolType = _nc.AppHost.TypeRegistry.GetTypeInfo(typeof(bool)).Name;
@@ -273,7 +314,9 @@ public class AutomataNode : IDisposable
         // TweakLast keeps this out of a separate undo step / avoids a full recompile.
         builder.Commit().Confirm(SolutionUpdateKind.TweakLast);
 
-        _firePinsSignature = sig;
+        // Only mark synced after a successful commit — if there was no session above we
+        // returned early without updating this, so the sync retries once one exists.
+        _firePinsVersion = _engine.Version;
     }
 
     // Pin names must be unique within the group; two transitions can share a title

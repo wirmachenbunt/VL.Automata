@@ -37,6 +37,7 @@ The machine is **stored in the patch**, not in an external file — see
 | in | `Data` | string | the machine as JSON (same format as the cables op), **stored in the patch** — leave unconnected; the node reads and writes it (see below) |
 | in | `Reset Target` | string | state label to reset to (empty = START) |
 | in | `Reset` | bool | rising edge resets |
+| in | `No UI Mode` | bool | when true, skip the ImGui frame + ToSkiaLayer update and output a null `Editor` — engine, outputs and `Fire` pins keep working. Flip on for a headless/running patch to reclaim the per-frame editor cost. Default false = UI on |
 | in | `Fire` | **pin group** of bool (bang) | one pin per transition, named by its "A to B" title; rising edge fires that transition |
 | out | `Active State` | string | current state label |
 | out | `Next State` | string | target of a pending (multi-frame) transition |
