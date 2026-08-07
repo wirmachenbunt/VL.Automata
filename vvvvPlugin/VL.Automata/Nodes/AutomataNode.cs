@@ -99,7 +99,6 @@ public class AutomataNode : IDisposable
         // and PersistData). Leave it unconnected — the node reads and writes it. You can
         // still paste a machine's JSON in to load it, or copy it out.
         string? data,
-        bool advance,
         string? resetTarget,
         bool reset,
         // Must be the *concrete* Dictionary<string, object> — VL's dictionary-pin-group
@@ -152,7 +151,10 @@ public class AutomataNode : IDisposable
             }
         }
 
-        if (advance) _engine.StepFrame();
+        // vvvv evaluates the node every patch frame, so step the machine every frame —
+        // that's what makes State Frames count and timed transitions progress. No gate:
+        // there's no trigger line in vvvv, the node just runs.
+        _engine.StepFrame();
 
         if (reset && !_prevReset) _engine.Reset(resetTarget);
         _prevReset = reset;

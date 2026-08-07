@@ -35,7 +35,6 @@ The machine is **stored in the patch**, not in an external file — see
 | direction | pin | type | meaning |
 |-----------|-----|------|---------|
 | in | `Data` | string | the machine as JSON (same format as the cables op), **stored in the patch** — leave unconnected; the node reads and writes it (see below) |
-| in | `Advance` | bool | step the machine one frame while true |
 | in | `Reset Target` | string | state label to reset to (empty = START) |
 | in | `Reset` | bool | rising edge resets |
 | in | `Fire` | **pin group** of bool (bang) | one pin per transition, named by its "A to B" title; rising edge fires that transition |
@@ -117,8 +116,9 @@ in-progress transition (amber) are highlighted live from the running engine.
    window (no renderer Space change needed — the layer handles it). Author the machine
    in the editor; it's saved with the patch. (To seed from an existing `.automata`, paste
    its JSON into the `Data` pin.)
-5. Toggle `Advance` to run; bang a transition's pin under `Fire` to change state;
-   watch `Active State` / `State Frames` / `Transition Countdown` / `Region Active`.
+5. The machine runs on its own (one frame per patch frame). Bang a transition's pin
+   under `Fire` to change state; watch `Active State` / `State Frames` /
+   `Transition Countdown` / `Region Active`.
 
 Note: `[ProcessNode]` classes hot-reload on rebuild, which is why this port uses
 ProcessNode. The per-transition `Fire` pins and the `Data` autosave are both driven by

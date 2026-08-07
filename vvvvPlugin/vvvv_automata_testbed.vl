@@ -15,13 +15,13 @@
       </p:NodeReference>
       <Patch Id="V6fa6178mEJQDJG01eWJ54">
         <Canvas Id="J3nQm2foXSfQQXC0gHo2nv" CanvasType="Group">
-          <Node Bounds="381,400,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
+          <Node Bounds="363,290,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
             <p:NodeReference LastCategoryFullName="Graphics.Skia" LastDependency="VL.Skia.vl">
               <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
               <Choice Kind="ProcessAppFlag" Name="Renderer" />
             </p:NodeReference>
             <Pin Id="CzCivbJalKuLeMJmJD35cX" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="454, 72, 966, 610" IsHidden="true" />
+            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="630, 68, 966, 610" IsHidden="true" />
             <Pin Id="V0zdMTYkBsbPisxKJyjcd8" Name="Save Bounds" Kind="InputPin" IsHidden="true" />
             <Pin Id="VBeIPlDcK0TNMHppyey4ZL" Name="Bound to Document" Kind="InputPin" IsHidden="true" />
             <Pin Id="MKuogSfgz48MYqmiFYePUB" Name="Dialog If Document Changed" Kind="InputPin" IsHidden="true" />
@@ -43,47 +43,66 @@
             <Pin Id="RnO8mYTgjU2PkvUcPIlRPj" Name="ClientBounds" Kind="OutputPin" />
             <Pin Id="LXRFSEiHHseOnvkVmU5kqu" Name="Render Time" Kind="OutputPin" />
           </Node>
-          <Node Bounds="135,280,185,19" Id="MPigUIUsIiLN8HVrrxYFvt">
+          <Pad Id="SSK8aX3xeRrNMyrDcw6XN8" Comment="Active State" Bounds="-108,320,68,22" ShowValueBox="true" isIOBox="true">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="String" />
+            </p:TypeAnnotation>
+          </Pad>
+          <Pad Id="KSbbaW8TdOFOgSkHpAx7EU" Comment="State Frames" Bounds="126,430,35,15" ShowValueBox="true" isIOBox="true">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="Integer32" />
+            </p:TypeAnnotation>
+          </Pad>
+          <Node Bounds="283,111,81,19" Id="IYsSQW5oZ7CLOykPxKYIdB">
+            <p:NodeReference LastCategoryFullName="Animation.FrameBased" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="FrameCounter" />
+            </p:NodeReference>
+            <Pin Id="KJQGzwCqsIdNYmnPRsgj4S" Name="Node Context" Kind="InputPin" IsHidden="true" />
+            <Pin Id="AtovqnSTz5BP72wwG81Pf7" Name="Count" Kind="ApplyPin" />
+            <Pin Id="LaSU6GSngEhNmotOoL6LLr" Name="Reset" Kind="ApplyPin" />
+            <Pin Id="VxqzAKWnPwDO3VsCqOR1FO" Name="Value" Kind="OutputPin" />
+          </Node>
+          <Pad Id="QqmP70wifU9NkqMd9FhJd1" Comment="Transition Countdown" Bounds="152,280,35,15" ShowValueBox="true" isIOBox="true">
+            <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+              <Choice Kind="TypeFlag" Name="Float32" />
+            </p:TypeAnnotation>
+          </Pad>
+          <Node Bounds="90,190,185,19" Id="O4Y5AqJzvWHOAp3xAs65ZG">
             <p:NodeReference LastCategoryFullName="Automata" LastDependency="VL.Automata.csproj">
               <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
               <Choice Kind="ProcessAppFlag" Name="Automata" />
             </p:NodeReference>
-            <Pin Id="MuhE3QeLriSLqUI6rkOTC2" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="EqNzRU11AeZMGAzOrYqowg" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-21734daf&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:200,&quot;y&quot;:200},{&quot;id&quot;:&quot;s-21b48897&quot;,&quot;label&quot;:&quot;state-2&quot;,&quot;x&quot;:1590,&quot;y&quot;:763},{&quot;id&quot;:&quot;s-4a230d72&quot;,&quot;label&quot;:&quot;state-3&quot;,&quot;x&quot;:358,&quot;y&quot;:853},{&quot;id&quot;:&quot;s-934c63c7&quot;,&quot;label&quot;:&quot;state-4&quot;,&quot;x&quot;:1097,&quot;y&quot;:228}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-b8c0a188&quot;,&quot;from&quot;:&quot;s-934c63c7&quot;,&quot;to&quot;:&quot;s-21b48897&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-0e8af190&quot;,&quot;from&quot;:&quot;s-21b48897&quot;,&quot;to&quot;:&quot;s-4a230d72&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ec1650e2&quot;,&quot;from&quot;:&quot;s-4a230d72&quot;,&quot;to&quot;:&quot;s-21734daf&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[]}" />
-            <Pin Id="IRl0UE2N2xUMY01DLCkS59" Name="Advance" Kind="InputPin" />
-            <Pin Id="BL8bdW79MeSPDBT82sSOlx" Name="Reset Target" Kind="InputPin" />
-            <Pin Id="T6XKbpYrv9DQQftJOudQfs" Name="Reset" Kind="InputPin" />
-            <Pin Id="BJuV3NS2yetOsF8N2r5h3a" Name="Active State" Kind="OutputPin" />
-            <Pin Id="LJo9xZBbv8tOIrbrBJJyj1" Name="Next State" Kind="OutputPin" />
-            <Pin Id="Oi6Ojl3hdBKL3rPA80T0VZ" Name="State Frames" Kind="OutputPin" />
-            <Pin Id="Jm8Wlc3NTRcNYbwCpwKPjX" Name="Transition Countdown" Kind="OutputPin" />
-            <Pin Id="MoU3ZMAEMlJPtQgWtyvgZG" Name="States" Kind="OutputPin" />
-            <Pin Id="TFhNl1qp21hN113Qx0njQX" Name="Transition Ids" Kind="OutputPin" />
-            <Pin Id="S7R0mWx0iGbPmXcG247mhb" Name="Transition Titles" Kind="OutputPin" />
-            <Pin Id="LZHEmR60H0sQRQHmoQ62JX" Name="Region Active" Kind="OutputPin" />
-            <Pin Id="FlmPUUUIO16L5wA8pYeJAE" Name="Region Ids" Kind="OutputPin" />
-            <Pin Id="DD2eQ1PbIPVLHUVA3rDPd4" Name="Editor" Kind="OutputPin" />
-            <Pin Id="RPBufgg9aMZOpoWffagDeR" Name="state-4 to state-2" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="HJ7V3sY5NGnQErM2Y6WfsJ" Name="Node Context" Kind="InputPin" IsHidden="true" />
+            <Pin Id="E70N6LLCXTQM5T8mI0NqEZ" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-fd0808a7&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:382,&quot;y&quot;:804},{&quot;id&quot;:&quot;s-856cef0c&quot;,&quot;label&quot;:&quot;state-2&quot;,&quot;x&quot;:1202,&quot;y&quot;:308},{&quot;id&quot;:&quot;s-cd25f223&quot;,&quot;label&quot;:&quot;state-3&quot;,&quot;x&quot;:1365,&quot;y&quot;:800}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-04f936cd&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-30b5f3b5&quot;,&quot;from&quot;:&quot;s-856cef0c&quot;,&quot;to&quot;:&quot;s-cd25f223&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-62be0050&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-cd25f223&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[]}" />
+            <Pin Id="RgbdYeOxjXVNd0Rfy7He4u" Name="Reset Target" Kind="InputPin" />
+            <Pin Id="CevVNNxmT5mMs1Ana8AeAL" Name="Reset" Kind="InputPin" />
+            <Pin Id="AjpCrN8peFIOzdq0i2TaJ5" Name="Active State" Kind="OutputPin" />
+            <Pin Id="Ei7kntNy7EGNJbZwgDcC3N" Name="Next State" Kind="OutputPin" />
+            <Pin Id="Jgns5ynETCqMwR4drdzI1N" Name="State Frames" Kind="OutputPin" />
+            <Pin Id="J9x032wtc6zNdULQ7zhsaj" Name="Transition Countdown" Kind="OutputPin" />
+            <Pin Id="OSFOqjA5uuOLZXFR8b5S2t" Name="States" Kind="OutputPin" />
+            <Pin Id="RT7buZ8TBuXMTAFGMfsLXs" Name="Transition Ids" Kind="OutputPin" />
+            <Pin Id="UQQkJcCiuPcOrqMr67zfS2" Name="Transition Titles" Kind="OutputPin" />
+            <Pin Id="VFfHgzYO2FOOKLdVSUk3dw" Name="Region Active" Kind="OutputPin" />
+            <Pin Id="OdUtxDdbRG7Osrryin7xJO" Name="Region Ids" Kind="OutputPin" />
+            <Pin Id="PeNf0w8WHnjPsnEHE3KJvY" Name="Editor" Kind="OutputPin" />
+            <Pin Id="Djdm7eU9HwxNjUmfy2NPAF" Name="START to state-2" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="VlXqswGlKo7M62yJfe9eVJ" Name="state-2 to state-3" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="Hhqi6wzOKHxO5Vrf7eedEn" Name="state-2 to state-3" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="FgExcDnAmEsN8PNEQWddtj" Name="state-3 to START" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="CIDB5zywb9TO0YSgwDV2iX" Name="START to state-3" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
-            <Pin Id="AWNMg55Vi9xPjqtFpJ6MRo" Name="Path" Kind="InputPin" DefaultValue="" />
           </Node>
-          <Pad Id="M5Ybw3uAICsMBlzopSJuNK" Comment="Active State" Bounds="-16,360,38,15" ShowValueBox="true" isIOBox="true" />
-          <Pad Id="Mo7q8xa0z8WM20V5tWYmJh" Comment="Next State" Bounds="49,410,35,15" ShowValueBox="true" isIOBox="true" />
-          <Pad Id="FaAQvYtMq7nLQyjOykeG6U" Comment="State Frames" Bounds="177,370,35,15" ShowValueBox="true" isIOBox="true" />
-          <Pad Id="U2y0mmanHtbM0JwGN72fc9" Comment="Transition Countdown" Bounds="197,440,35,15" ShowValueBox="true" isIOBox="true" />
         </Canvas>
         <Patch Id="E5lUQ1tTxo7PzUDY5hwxkn" Name="Create" />
         <Patch Id="EYvNKw8whziMBUu3qNUidj" Name="Update" />
@@ -91,11 +110,10 @@
           <Fragment Id="K353XV32NLLPnLG8MXJpuf" Patch="E5lUQ1tTxo7PzUDY5hwxkn" Enabled="true" />
           <Fragment Id="PMQHxyKaE5YQRb1ANIAMXa" Patch="EYvNKw8whziMBUu3qNUidj" Enabled="true" />
         </ProcessDefinition>
-        <Link Id="HDbR825SMFgMvlZnOStywH" Ids="DD2eQ1PbIPVLHUVA3rDPd4,EZDwJ0lihXrLub2R47ON3b" />
-        <Link Id="OoyUcPGr1qYOBILUHinXXm" Ids="BJuV3NS2yetOsF8N2r5h3a,M5Ybw3uAICsMBlzopSJuNK" />
-        <Link Id="QvWA4zyeywMMwDm3kc8Ot5" Ids="LJo9xZBbv8tOIrbrBJJyj1,Mo7q8xa0z8WM20V5tWYmJh" />
-        <Link Id="RjdK3SK5j7ZOQJJUMyr8nE" Ids="Oi6Ojl3hdBKL3rPA80T0VZ,FaAQvYtMq7nLQyjOykeG6U" />
-        <Link Id="KihiwncjfENMG5k6tAiBWa" Ids="Jm8Wlc3NTRcNYbwCpwKPjX,U2y0mmanHtbM0JwGN72fc9" />
+        <Link Id="USHYKoXIMOJM8MukKGr87n" Ids="PeNf0w8WHnjPsnEHE3KJvY,EZDwJ0lihXrLub2R47ON3b" />
+        <Link Id="FrCNxbmYySdMscPDv7cNyo" Ids="AjpCrN8peFIOzdq0i2TaJ5,SSK8aX3xeRrNMyrDcw6XN8" />
+        <Link Id="MpblV01eNepMotV9Np0Vsm" Ids="Jgns5ynETCqMwR4drdzI1N,KSbbaW8TdOFOgSkHpAx7EU" />
+        <Link Id="LjRZvkLyJ67LAvWBSzBLPh" Ids="J9x032wtc6zNdULQ7zhsaj,QqmP70wifU9NkqMd9FhJd1" />
       </Patch>
     </Node>
   </Patch>

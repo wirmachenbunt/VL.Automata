@@ -89,8 +89,8 @@ public sealed class AutomataEngine
 
     // ---- Commands -----------------------------------------------------------
 
-    // One simulation step, advanced exactly once per Trigger — counting triggers
-    // makes "frames" a real frame count (advanceFrame in the cables op).
+    // One simulation step. The node calls this once per vvvv frame (every Update), so
+    // counting steps makes "frames" a real frame count (advanceFrame in the cables op).
     public void StepFrame()
     {
         _stateFrames += 1;
