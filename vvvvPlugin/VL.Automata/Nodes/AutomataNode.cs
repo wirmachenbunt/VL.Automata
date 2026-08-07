@@ -23,17 +23,34 @@ namespace VL.Automata;
 // [Pin(PinGroupKind=…)] attribute the [ImportAsIs] importer reads, and the sync is
 // pure edit-time solution editing through IDevSession.Current.
 //
-// 'Path' points at a .automata file (same JSON as the cables op). 'Editor' is the
-// editor as a Skia ILayer; wire it straight into a renderer — it forces itself into
-// DIPTopLeft space (TopLeftSpaceLayer), so it renders correctly in the renderer's
-// default Normalized Space with no setting to change. Editing reloads the engine and
-// saves the file.
+// 'Data' is the machine itself, stored as JSON on an input pin — this is the
+// persistence. The node reads it to load the machine, and on every edit writes the
+// serialized document back into the pin via the solution API (ISolution.SetPinValue),
+// so the machine is saved *inside the .vl patch*, not in an external file (this is the
+// gamma equivalent of beta's "save data to a hidden pin"; VL.Audio.VST persists a VST
+// plugin's state chunk the same way). 'Editor' is the editor as a Skia ILayer; wire it
+// straight into a renderer — SetSpaceUpstream2 forces DIPTopLeft space so it renders
+// (and takes input) correctly in the renderer's default Normalized Space, no setting to
+// change. Editing updates the engine and the Data pin.
 [ProcessNode(Name = "Automata", Category = "Automata")]
 public class AutomataNode : IDisposable
 {
-    // The node's own context — needed to address this node application when editing
-    // its pin group (Path.Stack.Peek() is this node's UniqueId). vvvv injects it into
-    // the constructor of an imported node rather than exposing it as a pin.
+    // The input pin (string, JSON) that stores the machine *in the patch*. Must match the
+    // pin name vvvv derives from the 'data' parameter of Update — that's the pin
+    // SetPinValue addresses by name.
+    private const string DataPinName = "Data";
+
+    // Persist the machine into the pin's value in the .vl document, but don't recompile
+    // (~AffectCompilation) or add an undo step (~AddToHistory): continuous autosave that
+    // doesn't disturb the running graph. Same update kind VL.Audio.VST uses for its state.
+    // NOTE: the write *does* echo back into the live 'data' pin next frame — LoadIfChanged
+    // guards against that (via _persistedData) so our own autosave doesn't rebuild the editor.
+    private const SolutionUpdateKind JustWriteToThePin =
+        SolutionUpdateKind.Default & ~SolutionUpdateKind.AffectCompilation & ~SolutionUpdateKind.AddToHistory;
+
+    // The node's own context — needed to address this node application when editing its
+    // Fire pin group and its Data pin value (Path.Stack.Peek() is this node's UniqueId).
+    // vvvv injects it into the constructor of an imported node rather than as a pin.
     private readonly NodeContext _nc;
 
     private readonly AutomataEngine _engine = new();
@@ -51,7 +68,12 @@ public class AutomataNode : IDisposable
     private readonly SetSpaceUpstream2 _editorSpace = new();
     private readonly ILayer _editorLayer;
     private AutomataEditorWidget? _editor;
-    private string _loadedPath = "\0"; // sentinel so first Update always loads
+    // The machine JSON as last seen on the 'Data' input pin. Reload the editor/engine
+    // only when the pin value actually changes (sentinel so the first Update loads).
+    private string _loadedData = "\0";
+    // Last JSON written into the 'Data' pin — skip redundant writes (and the resulting
+    // document-dirty) when the serialized document hasn't changed.
+    private string _persistedData = "\0";
     private bool _docDirty;
     private bool _prevReset;
 
@@ -73,7 +95,10 @@ public class AutomataNode : IDisposable
     }
 
     public void Update(
-        string? path,
+        // The machine as JSON, stored on this pin and saved with the patch (see class doc
+        // and PersistData). Leave it unconnected — the node reads and writes it. You can
+        // still paste a machine's JSON in to load it, or copy it out.
+        string? data,
         bool advance,
         string? resetTarget,
         bool reset,
@@ -96,14 +121,14 @@ public class AutomataNode : IDisposable
         out Spread<string> regionIds,
         out ILayer? editor)
     {
-        EnsureLoaded(path ?? "");
+        LoadIfChanged(data ?? "");
 
         // Apply editor edits: reload the engine (keeps the active state valid) and
-        // persist the document back to the file so it survives reload.
+        // persist the document back into the Data pin so it survives reload / save.
         if (_docDirty && _editor is not null)
         {
             _engine.Load(_editor.Document);
-            SaveSafe(_loadedPath, _editor.Document);
+            PersistData(_editor.Document.Serialize());
             _docDirty = false;
         }
 
@@ -159,26 +184,63 @@ public class AutomataNode : IDisposable
         }
     }
 
-    private void EnsureLoaded(string path)
+    // Load the machine from the Data pin into the engine + editor, but only when the pin
+    // value is one we don't already have (or on first run). A fresh/empty pin yields a
+    // START-only machine, which is persisted back so a newly dropped node saves a valid
+    // document. Rebuilding replaces the editor widget (and its view state) — see the guard
+    // and the pan/zoom carry-over below for why that must not happen on our own autosave.
+    private void LoadIfChanged(string data)
     {
-        if (path == _loadedPath && _editor is not null) return;
-        _loadedPath = path;
+        // Skip when the pin value is something we already have — either what we last loaded
+        // (_loadedData) OR what we just autosaved (_persistedData). Our SetPinValue write
+        // echoes back into the live 'data' pin next frame; without the _persistedData check
+        // that echo would rebuild the editor on every edit, snapping pan/zoom back to
+        // default. Only a genuinely *external* value (e.g. a pasted machine) rebuilds.
+        if (_editor is not null && (data == _loadedData || data == _persistedData)) return;
+        _loadedData = data;
 
-        var doc = AutomataDocument.Parse(ReadSafe(path));
+        var doc = AutomataDocument.Parse(data);
         EnsureStart(doc);
         _engine.Load(doc);
 
+        // View state (pan/zoom) isn't in the document; carry it across the rebuild so an
+        // external load doesn't snap the view to default.
+        var prevPan = _editor?.Pan ?? default;
+        var prevZoom = _editor?.Zoom ?? 1f;
+
         _editor?.Dispose();
-        _editor = new AutomataEditorWidget(string.IsNullOrEmpty(path) ? "Automata" : path, doc)
+        _editor = new AutomataEditorWidget("Automata", doc)
         {
             Changed = () => _docDirty = true,
             ActiveStateId = () => _engine.ActiveStateId,
             PendingTransitionId = () => _engine.PendingTransitionId,
             ForceState = id => _engine.ForceState(id),
-            ForceTransition = id => _engine.ForceTransition(id)
+            ForceTransition = id => _engine.ForceTransition(id),
+            Pan = prevPan,
+            Zoom = prevZoom
         };
         _prevFirePins.Clear();
         _prevReset = false;
+
+        // The pin currently holds 'data'; only write if EnsureStart/normalisation changed
+        // it (e.g. a fresh empty node gains a START state). Avoids dirtying on open.
+        _persistedData = data;
+        var canonical = doc.Serialize();
+        if (canonical != data) PersistData(canonical);
+    }
+
+    // Write the machine JSON into the Data pin's value in the .vl document, so the machine
+    // is saved with the patch. Skips redundant writes; a no-op outside an editing session
+    // (IDevSession.Current is null in an exported app, where the value is already baked in).
+    private void PersistData(string json)
+    {
+        if (json == _persistedData) return;
+        _persistedData = json;
+
+        var solution = IDevSession.Current?.CurrentSolution;
+        if (solution is null) return;
+
+        solution.SetPinValue(_nc.Path.Stack.Peek(), DataPinName, json).Confirm(JustWriteToThePin);
     }
 
     // Add/remove Fire pins so there is exactly one per transition, named by its title
@@ -230,19 +292,6 @@ public class AutomataNode : IDisposable
     {
         if (doc.States.Count == 0)
             doc.States.Add(new StateData { Id = "s-" + Guid.NewGuid().ToString("N")[..8], Label = "START", X = 200, Y = 200 });
-    }
-
-    private static string ReadSafe(string path)
-    {
-        try { return !string.IsNullOrEmpty(path) && File.Exists(path) ? File.ReadAllText(path) : ""; }
-        catch (IOException) { return ""; }
-    }
-
-    private static void SaveSafe(string path, AutomataDocument doc)
-    {
-        if (string.IsNullOrEmpty(path)) return;
-        try { File.WriteAllText(path, doc.Serialize()); }
-        catch (IOException) { /* transient; next edit retries */ }
     }
 
     public void Dispose()

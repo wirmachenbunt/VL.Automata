@@ -15,13 +15,13 @@
       </p:NodeReference>
       <Patch Id="V6fa6178mEJQDJG01eWJ54">
         <Canvas Id="J3nQm2foXSfQQXC0gHo2nv" CanvasType="Group">
-          <Node Bounds="315,460,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
+          <Node Bounds="381,400,145,19" Id="MsHWAEhRd0xLz8ojxgvLB6">
             <p:NodeReference LastCategoryFullName="Graphics.Skia" LastDependency="VL.Skia.vl">
               <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
               <Choice Kind="ProcessAppFlag" Name="Renderer" />
             </p:NodeReference>
             <Pin Id="CzCivbJalKuLeMJmJD35cX" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="287, 77, 966, 610" IsHidden="true" />
+            <Pin Id="P8ck9MlDCeKLfPVkaYK364" Name="Bounds" Kind="InputPin" DefaultValue="454, 72, 966, 610" IsHidden="true" />
             <Pin Id="V0zdMTYkBsbPisxKJyjcd8" Name="Save Bounds" Kind="InputPin" IsHidden="true" />
             <Pin Id="VBeIPlDcK0TNMHppyey4ZL" Name="Bound to Document" Kind="InputPin" IsHidden="true" />
             <Pin Id="MKuogSfgz48MYqmiFYePUB" Name="Dialog If Document Changed" Kind="InputPin" IsHidden="true" />
@@ -49,7 +49,7 @@
               <Choice Kind="ProcessAppFlag" Name="Automata" />
             </p:NodeReference>
             <Pin Id="MuhE3QeLriSLqUI6rkOTC2" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="AWNMg55Vi9xPjqtFpJ6MRo" Name="Path" Kind="InputPin" DefaultValue="" />
+            <Pin Id="EqNzRU11AeZMGAzOrYqowg" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-21734daf&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:200,&quot;y&quot;:200},{&quot;id&quot;:&quot;s-21b48897&quot;,&quot;label&quot;:&quot;state-2&quot;,&quot;x&quot;:1590,&quot;y&quot;:763},{&quot;id&quot;:&quot;s-4a230d72&quot;,&quot;label&quot;:&quot;state-3&quot;,&quot;x&quot;:358,&quot;y&quot;:853},{&quot;id&quot;:&quot;s-934c63c7&quot;,&quot;label&quot;:&quot;state-4&quot;,&quot;x&quot;:1097,&quot;y&quot;:228}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-b8c0a188&quot;,&quot;from&quot;:&quot;s-934c63c7&quot;,&quot;to&quot;:&quot;s-21b48897&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-0e8af190&quot;,&quot;from&quot;:&quot;s-21b48897&quot;,&quot;to&quot;:&quot;s-4a230d72&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ec1650e2&quot;,&quot;from&quot;:&quot;s-4a230d72&quot;,&quot;to&quot;:&quot;s-21734daf&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[]}" />
             <Pin Id="IRl0UE2N2xUMY01DLCkS59" Name="Advance" Kind="InputPin" />
             <Pin Id="BL8bdW79MeSPDBT82sSOlx" Name="Reset Target" Kind="InputPin" />
             <Pin Id="T6XKbpYrv9DQQftJOudQfs" Name="Reset" Kind="InputPin" />
@@ -63,28 +63,27 @@
             <Pin Id="LZHEmR60H0sQRQHmoQ62JX" Name="Region Active" Kind="OutputPin" />
             <Pin Id="FlmPUUUIO16L5wA8pYeJAE" Name="Region Ids" Kind="OutputPin" />
             <Pin Id="DD2eQ1PbIPVLHUVA3rDPd4" Name="Editor" Kind="OutputPin" />
-            <Pin Id="NZpypDcBBjqLbhDF2cbWei" Name="START to state-2" Kind="InputPin" PinGroupName="Fire">
+            <Pin Id="RPBufgg9aMZOpoWffagDeR" Name="state-4 to state-2" Kind="InputPin" PinGroupName="Fire">
               <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
                 <Choice Kind="TypeFlag" Name="Boolean" />
               </p:TypeAnnotation>
             </Pin>
+            <Pin Id="VlXqswGlKo7M62yJfe9eVJ" Name="state-2 to state-3" Kind="InputPin" PinGroupName="Fire">
+              <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+                <Choice Kind="TypeFlag" Name="Boolean" />
+              </p:TypeAnnotation>
+            </Pin>
+            <Pin Id="FgExcDnAmEsN8PNEQWddtj" Name="state-3 to START" Kind="InputPin" PinGroupName="Fire">
+              <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
+                <Choice Kind="TypeFlag" Name="Boolean" />
+              </p:TypeAnnotation>
+            </Pin>
+            <Pin Id="AWNMg55Vi9xPjqtFpJ6MRo" Name="Path" Kind="InputPin" DefaultValue="" />
           </Node>
           <Pad Id="M5Ybw3uAICsMBlzopSJuNK" Comment="Active State" Bounds="-16,360,38,15" ShowValueBox="true" isIOBox="true" />
           <Pad Id="Mo7q8xa0z8WM20V5tWYmJh" Comment="Next State" Bounds="49,410,35,15" ShowValueBox="true" isIOBox="true" />
           <Pad Id="FaAQvYtMq7nLQyjOykeG6U" Comment="State Frames" Bounds="177,370,35,15" ShowValueBox="true" isIOBox="true" />
           <Pad Id="U2y0mmanHtbM0JwGN72fc9" Comment="Transition Countdown" Bounds="197,440,35,15" ShowValueBox="true" isIOBox="true" />
-          <Node Bounds="283,201,65,19" Id="BChSH2zS6LQPEjXGKqct9b">
-            <p:NodeReference LastCategoryFullName="IO" LastDependency="VL.CoreLib.vl">
-              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
-              <Choice Kind="ProcessAppFlag" Name="File" />
-            </p:NodeReference>
-            <Pin Id="HMqn8Or4NaQPRrv3FTHDGK" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="LltOwGktHEiQSB0yF8ECWC" Name="File Path" Kind="InputPin" />
-            <Pin Id="FyYqKxusx0FOGCTKsiVxiE" Name="File Mode" Kind="InputPin" />
-            <Pin Id="T0BUshrvfTdLaJ8mVKObol" Name="File Access" Kind="InputPin" />
-            <Pin Id="GfzEq3Ah4PoLmuXfB79QvZ" Name="File Share" Kind="InputPin" />
-            <Pin Id="Hb7JaFeXeiTNtmIrhNT43B" Name="Result" Kind="OutputPin" />
-          </Node>
         </Canvas>
         <Patch Id="E5lUQ1tTxo7PzUDY5hwxkn" Name="Create" />
         <Patch Id="EYvNKw8whziMBUu3qNUidj" Name="Update" />

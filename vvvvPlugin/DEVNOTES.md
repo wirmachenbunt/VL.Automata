@@ -85,6 +85,55 @@ Outputs include `Transition Ids` / `Transition Titles` (the titles match the `Fi
 pin names), plus region activity as aligned `Region Active` / `Region Ids` spreads.
 `Editor` is a **Skia `ILayer`** (see below). Full pin table in README.
 
+## Persistence: the machine is stored *in the patch* (`Data` pin), not a file
+
+We dropped the original external-`.automata`-file approach (`Path` pin + `File.Read/Write`).
+The machine now lives on a **`Data` string input pin** as JSON and is saved inside the
+`.vl` — the gamma equivalent of vvvv beta's "save data to a hidden pin". Same mechanism as
+the `Fire` pins (solution editing via `IDevSession.Current.CurrentSolution`), and the same
+technique VL.Audio.VST's `EffectHost` uses to persist a VST plugin's **state chunk** with
+the patch (see `reference/vst/EffectHost.cs`: `StateInputPinName`, `SaveToPin`,
+`SetPinValue`, its `JustWriteToThePin` update kind).
+
+Mechanism (`AutomataNode.PersistData`):
+```csharp
+solution.SetPinValue(nodeId, "Data", json)
+        .Confirm(SolutionUpdateKind.Default & ~AffectCompilation & ~AddToHistory);
+```
+- `SetPinValue(UniqueId nodeId, string pinName, object value)` writes the pin's **constant
+  value** in the document (`nodeId = _nc.Path.Stack.Peek()`, same id as the pin-group edit).
+  The pin name **must match** what vvvv derives from the `data` parameter → `"Data"`.
+- **`~AffectCompilation`** persists into the document but does **not** recompile the
+  running graph → continuous autosave on every edit is cheap (no recompile hitch).
+- **`~AddToHistory`** keeps autosave out of undo.
+
+**The write DOES echo back** (learned the hard way): after `SetPinValue`, the live `data`
+pin reflects the new JSON on the *next* frame. So autosave feeds back into the read path.
+Without a guard, that echo makes `LoadIfChanged` think the pin changed and **rebuild the
+editor widget on every edit** — which resets pan/zoom to default (the widget instance holds
+the view transform). (An earlier revision of these notes wrongly claimed `~AffectCompilation`
+suppresses the echo; it does not.)
+
+Sync discipline (mirrors the `Fire` pins):
+- `LoadIfChanged` rebuilds editor+engine only when the incoming `data` is a value we don't
+  already have — i.e. **`data != _loadedData && data != _persistedData`** (sentinel `"\0"`
+  → first Update loads). The `_persistedData` half is what swallows our own autosave echo;
+  only a *genuinely external* value (a pasted machine) rebuilds. That's the copy/paste-in
+  feature.
+- Rebuilding replaces the widget, so **pan/zoom are carried across** (`AutomataEditorWidget.
+  Pan`/`Zoom`) — an external paste doesn't snap the view to default either. View state is
+  session-transient, deliberately *not* stored in the document (persisting it would rewrite
+  the pin on every pan/zoom).
+- `PersistData` skips writes when the JSON equals `_persistedData` — avoids re-writing and,
+  importantly, avoids **marking the document dirty on open** (EffectHost guards the same way
+  with `if (!Equals(channel.Value, value))`). On load we prime `_persistedData = data`, then
+  only write back if `EnsureStart`/normalisation changed it (a fresh empty node → `START`).
+- No editing session (exported/standalone app): `IDevSession.Current` is null → `PersistData`
+  is a no-op; the value is already baked into the exported document.
+
+Note EffectHost keeps an `IChannel<T>` for the *live* value; we don't need that — the editor
+widget holds the live document in memory, the pin is purely persistence.
+
 ## Build setup
 
 - **`net8.0-windows`** + **`<EnableWindowsTargeting>true</EnableWindowsTargeting>`** —

@@ -17,7 +17,7 @@ VL.Automata/
   Editor/AutomataEditorWidget.cs  ImGui DrawList editor (VL.ImGui.Widget)
 reference/Packs/            VL.ImGui + VL.ImGui.Skia packs (read-only, API lookup)
 reference/demonodeproject/  the [ProcessNode] template that established the pattern
-Demo.automata              sample document
+Demo.automata              sample machine JSON (paste into the Data pin to load)
 ```
 
 ## Node model
@@ -27,11 +27,14 @@ group**: the node keeps **one bang pin per transition** in sync with the machine
 no packaging or node factory required (see [DEVNOTES](DEVNOTES.md) for how). Regions
 are still exposed as aligned spreads.
 
+The machine is **stored in the patch**, not in an external file — see
+[Persistence](#persistence-data-pin) below.
+
 `Automata` pins:
 
 | direction | pin | type | meaning |
 |-----------|-----|------|---------|
-| in | `Path` | string | path to a `.automata` file (same JSON as the cables op) |
+| in | `Data` | string | the machine as JSON (same format as the cables op), **stored in the patch** — leave unconnected; the node reads and writes it (see below) |
 | in | `Advance` | bool | step the machine one frame while true |
 | in | `Reset Target` | string | state label to reset to (empty = START) |
 | in | `Reset` | bool | rising edge resets |
@@ -52,6 +55,19 @@ named by its **title** (e.g. `Idle to Run`). Bang the pin for the transition you
 want; on its rising edge that transition fires — only when it's valid from the
 current state with nothing pending. The pins appear/disappear automatically as you
 add, remove, or rename transitions in the editor.
+
+## Persistence (`Data` pin)
+
+The machine lives on the **`Data`** input pin as JSON and is **saved inside the `.vl`
+patch** — no external `.automata` file. **Leave `Data` unconnected**: the node reads it
+to load the machine and writes the serialized document back into it on every edit, via
+the vvvv solution API (`ISolution.SetPinValue`, confirmed *without* recompiling or adding
+to undo — see [DEVNOTES](DEVNOTES.md)). A freshly dropped node initialises itself to a
+`START`-only machine and stores that.
+
+Because it's a real pin you can still **copy the JSON out** of one node or **paste a
+machine in** to load it. (This is the gamma equivalent of beta's "save to a hidden pin";
+VL.Audio.VST persists a VST plugin's state chunk the same way.)
 
 ## Editor window
 
@@ -95,16 +111,19 @@ in-progress transition (amber) are highlighted live from the running engine.
 1. `dotnet build -c Release` → `bin/Release/net8.0/VL.Automata.dll`.
 2. In gamma, add a dependency on the built `VL.Automata.dll` (or reference the
    `.csproj`).
-3. Drop the **Automata** node (category `Automata`).
-4. Set `Path` to a `.automata` file (copy `Demo.automata`), wire the `Editor`
-   layer straight into a renderer / RenderWindow to open the editor window (no
-   renderer Space change needed — the layer handles it).
+3. Drop the **Automata** node (category `Automata`). It initialises to a `START`-only
+   machine and stores it on the `Data` pin — no file to set up.
+4. Wire the `Editor` layer straight into a renderer / RenderWindow to open the editor
+   window (no renderer Space change needed — the layer handles it). Author the machine
+   in the editor; it's saved with the patch. (To seed from an existing `.automata`, paste
+   its JSON into the `Data` pin.)
 5. Toggle `Advance` to run; bang a transition's pin under `Fire` to change state;
    watch `Active State` / `State Frames` / `Transition Countdown` / `Region Active`.
 
 Note: `[ProcessNode]` classes hot-reload on rebuild, which is why this port uses
-ProcessNode. The per-transition `Fire` pins are driven by the vvvv solution API
-(`ISolution.ModifyPinGroup`) at edit time — no packaging or factory needed.
+ProcessNode. The per-transition `Fire` pins and the `Data` autosave are both driven by
+the vvvv solution API (`ISolution.ModifyPinGroup` / `SetPinValue`) at edit time — no
+packaging or factory needed.
 
 ## Status
 

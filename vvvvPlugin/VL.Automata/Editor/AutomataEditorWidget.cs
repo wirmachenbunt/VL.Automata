@@ -58,6 +58,12 @@ public sealed class AutomataEditorWidget : IDisposable
     private Vector2 _origin;
     private Vector2 _pan;
     private float _zoom = 1f;
+
+    // View state (pan/zoom) is session-transient, not part of the document. Exposed so a
+    // reload can carry it across a rebuilt widget instead of snapping back to the default
+    // view (see AutomataNode.LoadIfChanged).
+    public Vector2 Pan { get => _pan; set => _pan = value; }
+    public float Zoom { get => _zoom; set => _zoom = value; }
     // right-button: drag = pan, click on a state = start transition
     private bool _rightMoved;
     private string? _rightDownState;
@@ -207,7 +213,7 @@ public sealed class AutomataEditorWidget : IDisposable
             var b0 = b - dir * Z(StateRadius);
             dl.AddLine(a0, b0, col, active ? 3f : 2f);
             var n = new Vector2(-dir.Y, dir.X);
-            dl.AddTriangleFilled(b0, b0 - dir * Z(12) + n * Z(6), b0 - dir * Z(12) - n * Z(6), col);
+            dl.AddTriangleFilled(b0, b0 - dir * Z(24) + n * Z(12), b0 - dir * Z(24) - n * Z(12), col);
 
             var mid = (a0 + b0) * 0.5f;
             string label = TransitionLabel(t, from, to);
