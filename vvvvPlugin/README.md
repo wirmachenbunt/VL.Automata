@@ -5,6 +5,10 @@ A finite-state-machine node for vvvv gamma, ported from the cables op
 (not a docked tab); the running node reports the active state, frame counters and
 region activity, and fires transitions.
 
+> **Using the node?** See the **[User Manual](MANUAL.md)** for a task-oriented guide
+> (concepts, editor interactions, running the machine, full pin reference). This README
+> and [DEVNOTES.md](DEVNOTES.md) focus on the build and the design rationale.
+
 ## Layout
 
 ```
