@@ -324,6 +324,9 @@ function removeRegionActiveOutput(regionId)
     const entry = regionActiveOutputs.get(regionId);
     if (!entry) return;
 
+    // Detach patch links before removing the port (see removeTrigger) so a
+    // connected region output doesn't leave cables with a dangling Link.
+    if (entry.port && typeof entry.port.removeLinks === "function") entry.port.removeLinks();
     if (entry.port && typeof op.removePort === "function") op.removePort(entry.port);
     regionActiveOutputs.delete(regionId);
 }
@@ -471,6 +474,9 @@ function removeTrigger(id)
     const entry = createdTriggers.get(id);
     if (!entry) return;
     const t = entry.trigger || entry;
+    // Detach any patch links first: removing a port that still has a live link
+    // leaves cables holding a dangling Link and it throws on the next update.
+    if (t && typeof t.removeLinks === "function") t.removeLinks();
     if (typeof op.removePort === "function") op.removePort(t);
     else if (t && typeof t.remove === "function") t.remove();
     createdTriggers.delete(id);
