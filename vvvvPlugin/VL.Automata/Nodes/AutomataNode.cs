@@ -40,6 +40,25 @@ public class AutomataNode : IDisposable
     // SetPinValue addresses by name.
     private const string DataPinName = "Data";
 
+    // The editor's ImGui font atlas is baked once at this glyph size (device-independent hecto
+    // pixels: 0.6 = 60 DIP, then × the host DPI factor). We bake larger than the on-screen label
+    // size (AutomataEditorWidget.LabelFontSize ~28) on purpose: the atlas is a fixed raster (no
+    // mipmaps in dear imgui 1.90), so zooming the canvas in magnifies the glyphs past their baked
+    // size and they go soft/pixelated. Bigger bake = more zoom-in headroom before softening
+    // (crisp until display px > bake, i.e. ~2.1x zoom here); but it is NOT a free win — the far
+    // zoom-out (~5-6px glyphs) minifies harder with no mips, and even at rest 28-from-60 is a mild
+    // downscale. 0.6 favours the resting view; ~0.8 favours deeper zoom-in. Tune by eye.
+    // Cost is a larger font texture, built once at startup. See DEVNOTES "DPI / UI scaling".
+    private const float FontBakeSize = 0.6f;
+    // A single custom font: the system UI face (FontConfig.Default) at the big bake size. Being the
+    // only/first font makes it the default the widget draws with, so IG.GetFontSize() == the bake
+    // size. Default is null on non-Windows (or if no system font) → empty spread, and VL.ImGui
+    // falls back to baking its own default at the host DPI.
+    private static readonly Spread<FontConfig?> EditorFonts =
+        FontConfig.Default is { } def
+            ? new FontConfig?[] { def with { Size = FontBakeSize } }.ToSpread()
+            : Spread<FontConfig?>.Empty;
+
     // Persist the machine into the pin's value in the .vl document, but don't recompile
     // (~AffectCompilation) or add an undo step (~AddToHistory): continuous autosave that
     // doesn't disturb the running graph. Same update kind VL.Audio.VST uses for its state.
@@ -227,7 +246,7 @@ public class AutomataNode : IDisposable
         else
         {
             _editor.ShowBackground = !noBackground;
-            _toSkia.Update(_editor.Widget, dockingEnabled: false, fonts: Spread<FontConfig>.Empty, fullscreenWindow: false, Style: null);
+            _toSkia.Update(_editor.Widget, dockingEnabled: false, fonts: EditorFonts, fullscreenWindow: false, Style: null);
             editor = _editorLayer;
         }
     }

@@ -7896,20 +7896,20 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\christianengler\\.nuget\\packages\\": {}
+    "C:\\Users\\user\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+      "projectUniqueName": "C:\\Users\\user\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
       "projectName": "VL.Automata",
-      "projectPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
-      "packagesPath": "C:\\Users\\christianengler\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
+      "projectPath": "C:\\Users\\user\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\VL.Automata.csproj",
+      "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\user\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\christianengler\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
-        "C:\\Users\\christianengler\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\user\\Documents\\AutomataX\\vvvvPlugin\\VL.Automata\\NuGet.Config",
+        "C:\\Users\\user\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0-windows"

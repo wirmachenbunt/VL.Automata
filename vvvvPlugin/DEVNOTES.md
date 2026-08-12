@@ -222,6 +222,52 @@ widget holds the live document in memory, the pin is purely persistence.
   top-left), NOT `GetMainViewport().Pos` (that's an OS-desktop offset for a
   Skia-rendered ImGui).
 
+## DPI / UI scaling (typography-vs-geometry proportion)
+
+- **Symptom.** On a machine with different Windows display scaling, the editor's
+  proportions drift: circles look bigger relative to the labels, and the type looks a
+  little softer. It is *not* the monitor resolution — it's the **UI scaling %** (the DPI
+  factor), which usually differs from the dev box.
+- **Cause.** Two coordinate worlds that VL.ImGui scales differently:
+  - **Geometry** (`StateRadius = 96`, label paddings, gaps, line widths) are plain
+    document units drawn as `const * _zoom`. No DPI factor.
+  - **Type** goes through `IG.GetFontSize()`. VL.ImGui bakes the default font at
+    `FontConfig.Size` (`0.16` hecto = **16 DIP**) × `ImGuiConversion.ToImGuiScaling`
+    (`= DIPFactor * 100`), so **`GetFontSize()` == 16 · DIP** — it carries the host DPI.
+  - `ToSkiaLayer.Render` then scales the whole frame by `FromImGuiScaling = 1/(DIP*100)`,
+    which cancels the DIP out of the type but **not** out of the geometry. In-canvas the
+    ratio is `circle : type = 96 : 16·DIP = 6/DIP` → lower-DPI box ⇒ relatively bigger
+    circles. (So the machine that looked "right" is simply the higher-DPI one.)
+  - The *softness* is separate: the font atlas is baked at the host DIP, so a lower-DPI
+    box bakes fewer texels and upscales more at zoom. The fix below doesn't worsen it; a
+    crisper atlas would mean baking the font larger (a `FontConfig` with a bigger `Size`).
+- **Fix, part 1 — size type in document units (`AutomataEditorWidget.LabelFontSize`).**
+  Instead of drawing at `IG.GetFontSize()` (which carries the host DIP), draw/measure the
+  canvas labels at a constant **`LabelFontSize` in document units** — the same space as
+  `StateRadius = 96`. The type-to-graphics proportion is then fixed by those two constants
+  alone and is identical on every monitor; DIP never enters. `Text()` draws at
+  `LabelFontSize * _zoom`; `TextSizeDoc()`/`TextSize()` rescale `CalcTextSize` (measured at
+  the atlas bake size) by `FontDocScale = LabelFontSize / GetFontSize()`. The transition-label
+  **hit-test** uses the same `TextSizeDoc` (so the pick box matches the drawn pill), and the
+  inline-edit `editScale = FontDocScale * _zoom`. Geometry, hit-tests and the document are
+  untouched — only the type is re-based, so interaction stays pixel-accurate. Tune
+  `LabelFontSize` for label size.
+- **Fix, part 2 — bake the atlas big (`AutomataNode.FontBakeSize`, `EditorFonts`).** The font
+  atlas is a fixed raster; when the canvas is zoomed in ImGui magnifies the glyphs past their
+  baked size → soft/pixelated type. We pass a custom `FontConfig` (the system UI face at
+  `FontBakeSize = 0.8` hecto = 80 DIP × host DIP, vs the display size ~28) as the `fonts`
+  spread to `_toSkia.Update`, so the glyphs stay crisp across the whole zoom range. Rule of
+  thumb: **keep `FontBakeSize * 100 >= LabelFontSize * MaxZoom`** (here 80 ≥ 28·4 = 112 → bump
+  bake or lower zoom if you raise the label size much). Being the only/first font makes it the
+  default, so `IG.GetFontSize()` == the bake size (which `FontDocScale` divides back out).
+  `FontConfig.Default` is null off-Windows → `EditorFonts` falls back to empty and VL.ImGui
+  bakes its own default.
+- **Help HUD is the exception.** `DrawHelp` is a fixed-size legend, not canvas content, and its
+  default `AddText` would now render at the *big bake size*. It draws at an explicit
+  `15 * DipFactor` px — a constant *physical* size (via VL.ImGui's own DIP source,
+  `ImGuiConversion.ToImGuiScaling / 100`, `public` in the already-imported `VL.ImGui`) — so it
+  neither zooms nor changes with DPI or bake size.
+
 ## Editor implementation (ImGui via VL.ImGui)
 
 - Custom drawing goes through **`VL.ImGui.Widgets.ImmediateModeWidget`** with

@@ -108,9 +108,27 @@ public sealed class AutomataEditorWidget : IDisposable
     private static string TransitionKey(TransitionData t) =>
         !string.IsNullOrWhiteSpace(t.Id) ? t.Id : $"{t.From}-to-{t.To}";
 
+    // Canvas label height in DOCUMENT units — the SAME space as the geometry (StateRadius = 96,
+    // paddings, gaps). Sizing type in document units (rather than off IG.GetFontSize(), which
+    // carries the host's Windows-scaling / DPI factor) is what keeps the type-to-graphics
+    // proportion identical on every monitor: it's fixed by these two constants alone. Tune this
+    // for label size — it is capped for crispness by the atlas bake size (AutomataNode.FontBakeSize):
+    // keep LabelFontSize * MaxZoom  <=  FontBakeSize * 100, else deep zoom re-softens the glyphs.
+    private const float LabelFontSize = 28f;
+    // The atlas is baked much larger than we display (see AutomataNode.FontBakeSize) so it stays
+    // crisp when zoomed. IG.GetFontSize() is that bake size; used only to rescale CalcTextSize
+    // (measured at the bake size) down into our document-unit label size.
+    private float FontDocScale => LabelFontSize / IG.GetFontSize();
+    // VL.ImGui's DIP source (ToImGuiScaling = DIPFactor * 100). Canvas content is DPI-independent
+    // by construction (document units); only the fixed help HUD uses this, to hold a constant
+    // *physical* size regardless of scaling or bake size. See DEVNOTES "DPI / UI scaling".
+    private static float DipFactor => MathF.Max(0.01f, ImGuiConversion.ToImGuiScaling / 100f);
+
     private void Text(ImDrawListPtr dl, Vector2 topLeft, uint col, string text)
-        => dl.AddText(IG.GetFont(), IG.GetFontSize() * _zoom, topLeft, col, text);
-    private Vector2 TextSize(string text) => IG.CalcTextSize(text) * _zoom;
+        => dl.AddText(IG.GetFont(), LabelFontSize * _zoom, topLeft, col, text);
+    // Text extent in DOCUMENT units, matching what Text() draws (i.e. TextSize / zoom).
+    private Vector2 TextSizeDoc(string text) => IG.CalcTextSize(text) * FontDocScale;
+    private Vector2 TextSize(string text) => TextSizeDoc(text) * _zoom;
 
     private void Draw(Context context)
     {
@@ -163,6 +181,7 @@ public sealed class AutomataEditorWidget : IDisposable
         DrawStates(dl);
         DrawRegionDraft(dl, mouse);
         DrawHelp(dl, size);
+        DrawZoomLabel(dl, size);
 
         if (_editKind != EditKind.None)
             DrawInlineEdit();
@@ -321,8 +340,23 @@ public sealed class AutomataEditorWidget : IDisposable
         const string help = "dbl-click: add state / rename  |  right-click state → click target: transition  |  " +
                             "Ctrl+click: force state / run transition  |  Alt or Middle click: delete  |  " +
                             "Alt+drag: region  |  right-drag: pan  |  wheel: zoom";
-        var ts = IG.CalcTextSize(help);
-        dl.AddText(_origin + new Vector2(8, size.Y - ts.Y - 8), Col(0.5f, 0.55f, 0.6f), help);
+        // A fixed-size HUD, not canvas content: draw at an explicit small size (the default font
+        // is now the large bake size) held constant in physical pixels via DipFactor, so it
+        // neither zooms nor changes with DPI. Measure at the same size to place it flush bottom-left.
+        float helpPx = 15f * DipFactor;
+        var ts = IG.CalcTextSize(help) * (helpPx / IG.GetFontSize());
+        dl.AddText(IG.GetFont(), helpPx, _origin + new Vector2(8, size.Y - ts.Y - 8), Col(0.5f, 0.55f, 0.6f), help);
+    }
+
+    // Current zoom as a percentage, pinned top-right. Same fixed-size HUD treatment as DrawHelp
+    // (constant physical size via DipFactor; neither zooms nor changes with DPI). Right-aligned,
+    // so subtract the measured width from the right edge.
+    private void DrawZoomLabel(ImDrawListPtr dl, Vector2 size)
+    {
+        string label = $"{MathF.Round(_zoom * 100f)}%";
+        float px = 15f * DipFactor;
+        var ts = IG.CalcTextSize(label) * (px / IG.GetFontSize());
+        dl.AddText(IG.GetFont(), px, _origin + new Vector2(size.X - ts.X - 8, 8), Col(0.5f, 0.55f, 0.6f), label);
     }
 
     // ---------------------------- interaction --------------------------------
@@ -505,7 +539,7 @@ public sealed class AutomataEditorWidget : IDisposable
             // Primary target: the label pill. Its doc-space half-extent mirrors the drawn
             // screen half-extent (ts*0.5 + Z(LabelPad), ts = raw*zoom) divided by zoom, i.e.
             // raw*0.5 + LabelPad — see DrawTransitions.
-            var raw = IG.CalcTextSize(TransitionLabel(t, from, to));
+            var raw = TextSizeDoc(TransitionLabel(t, from, to));
             var half = raw * 0.5f + new Vector2(LabelPadX, LabelPadY);
             if (Math.Abs(mouse.X - mid.X) <= half.X && Math.Abs(mouse.Y - mid.Y) <= half.Y)
                 return t;
@@ -657,11 +691,12 @@ public sealed class AutomataEditorWidget : IDisposable
             }
         }
 
-        // Match the labels' zoomed font so the field overlays the original text (InputText
-        // otherwise renders at the base font size). Metrics below are then in the same
-        // zoomed pixels as the label. Transitions edit just a number, so scale that box up
-        // a bit more — it's easier to read and hit — and the caption scales with it.
-        float editScale = _zoom * (_editKind == EditKind.TransitionFrames ? 1.6f : 1f);
+        // Match the label so the field overlays the original text (InputText otherwise renders
+        // at the base font size). Text() draws at LabelFontSize * zoom while the baked font is
+        // GetFontSize(), so FontDocScale * zoom lands the InputText at the same size; the metrics
+        // below are then in those same pixels. Transitions edit just a number, so scale that box
+        // up a bit more — easier to read and hit — and the caption scales with it.
+        float editScale = FontDocScale * _zoom * (_editKind == EditKind.TransitionFrames ? 1.6f : 1f);
         IG.SetWindowFontScale(editScale);
 
         var pad = IG.GetStyle().FramePadding;
