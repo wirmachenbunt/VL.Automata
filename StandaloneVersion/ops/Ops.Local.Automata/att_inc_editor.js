@@ -1420,7 +1420,9 @@ function initKonvaUI(container)
                 y: (pointer.y - stage.y()) / oldScale,
             };
 
-            let direction = e.evt.deltaY > 0 ? 1 : -1;
+            // Scroll up (deltaY < 0) zooms in, scroll down zooms out — the usual
+            // convention. ctrlKey (trackpad pinch) inverts deltaY, so flip back.
+            let direction = e.evt.deltaY > 0 ? -1 : 1;
             if (e.evt.ctrlKey) direction = -direction;
 
             const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
