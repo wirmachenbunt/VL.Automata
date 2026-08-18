@@ -52,6 +52,7 @@ The machine is **stored in the patch**, not in an external file — see
 | out | `Transition Titles` | Spread&lt;string&gt; | "A to B" labels (match the `Fire` pin names) |
 | out | `Region Active` | Spread&lt;float&gt; | 1/0 per region, aligned with Region Names |
 | out | `Region Names` | Spread&lt;string&gt; | region names (the title you give a region; falls back to its id) |
+| out | `Automata` | AutomataInfo | one-cable bundle of all the outputs above (active state, next state, state frames, transition countdown, and the four spreads) as a single immutable object — pass the whole automata downstream on one wire and split out only what you need |
 | out | `Editor` | ILayer (Skia) | the editor as a Skia layer — wire straight into a renderer |
 
 **Firing a transition:** the `Fire` pin group holds one bang pin per transition,
@@ -59,6 +60,16 @@ named by its **title** (e.g. `Idle to Run`). Bang the pin for the transition you
 want; on its rising edge that transition fires — only when it's valid from the
 current state with nothing pending. The pins appear/disappear automatically as you
 add, remove, or rename transitions in the editor.
+
+### Splitters
+
+Nodes that unpack the `Automata` (AutomataInfo) output onto separate cables:
+
+| node | in | out |
+|------|----|-----|
+| `GetActiveState` | `Automata` (AutomataInfo) | `Active State` (string), `State Frames` (int) |
+| `GetActiveTransition` | `Automata` (AutomataInfo) | `Transition Title` (string, "A to B"), `Next State` (string), `Transition Countdown` (float) |
+| `GetActiveRegion` | `Automata` (AutomataInfo) | `Active Regions` (Spread&lt;string&gt;) — names of the regions the current state is inside (regions can overlap) |
 
 ## Persistence (`Data` pin)
 

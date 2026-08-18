@@ -1,3 +1,9 @@
+ToDos
+
+- Undo
+- Auto Progress when Transition is continiously on
+
+
 # VL.Automata — developer notes & decisions
 
 Context for anyone (human or AI) picking this up later. The **README.md** covers
@@ -103,6 +109,13 @@ bump it. The node caches against it:
 
 Don't reintroduce per-frame LINQ/`ToSpread`/`string.Join` in `Update`; route new
 document-derived outputs through the same `Version` (or `ActiveStateId`) cache checks.
+
+The **`Automata` output** (an immutable `AutomataInfo` record, `Engine/AutomataInfo.cs`)
+bundles all the other outputs onto one cable. It is the one deliberate per-frame
+allocation: a small record wrapping the *already-cached* scalars and spreads (spreads
+shared by reference, never re-derived), built after the cache checks above. Keep it that
+way — build it from the cached fields, don't recompute anything for it. It's a snapshot,
+not a live engine handle, so downstream can hold/compare/route it safely.
 
 ## Persistence: the machine is stored *in the patch* (`Data` pin), not a file
 

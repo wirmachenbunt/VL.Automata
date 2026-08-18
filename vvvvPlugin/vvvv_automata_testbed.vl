@@ -64,7 +64,7 @@
               <Choice Kind="ProcessAppFlag" Name="Automata" />
             </p:NodeReference>
             <Pin Id="HJ7V3sY5NGnQErM2Y6WfsJ" Name="Node Context" Kind="InputPin" IsHidden="true" />
-            <Pin Id="E70N6LLCXTQM5T8mI0NqEZ" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-fd0808a7&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:429.6609269976616,&quot;y&quot;:136.9344158768654},{&quot;id&quot;:&quot;s-856cef0c&quot;,&quot;label&quot;:&quot;Menu&quot;,&quot;x&quot;:867.5770316123962,&quot;y&quot;:456.97829300165176},{&quot;id&quot;:&quot;s-990e5e06&quot;,&quot;label&quot;:&quot;Choice02&quot;,&quot;x&quot;:-11.400371074676514,&quot;y&quot;:749.8373754024506}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-04f936cd&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-7a8ce818&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-d8d6f5ca&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ac7c2d2c&quot;,&quot;from&quot;:&quot;s-856cef0c&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-e864f2c0&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-fd0808a7&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[{&quot;id&quot;:&quot;r-f0c17927&quot;,&quot;x&quot;:736.7887573242188,&quot;y&quot;:56.157623291015625,&quot;radius&quot;:595.1885375976562,&quot;title&quot;:&quot;MainRegion&quot;}]}" />
+            <Pin Id="E70N6LLCXTQM5T8mI0NqEZ" Name="Data" Kind="InputPin" DefaultValue="{&quot;states&quot;:[{&quot;id&quot;:&quot;s-fd0808a7&quot;,&quot;label&quot;:&quot;START&quot;,&quot;x&quot;:429.6609269976616,&quot;y&quot;:136.9344158768654},{&quot;id&quot;:&quot;s-856cef0c&quot;,&quot;label&quot;:&quot;Menu&quot;,&quot;x&quot;:867.5770316123962,&quot;y&quot;:456.97829300165176},{&quot;id&quot;:&quot;s-990e5e06&quot;,&quot;label&quot;:&quot;Choice02&quot;,&quot;x&quot;:-11.400371074676514,&quot;y&quot;:749.8373754024506}],&quot;transitions&quot;:[{&quot;id&quot;:&quot;t-04f936cd&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-7a8ce818&quot;,&quot;from&quot;:&quot;s-fd0808a7&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:60},{&quot;id&quot;:&quot;t-d8d6f5ca&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-856cef0c&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-ac7c2d2c&quot;,&quot;from&quot;:&quot;s-856cef0c&quot;,&quot;to&quot;:&quot;s-990e5e06&quot;,&quot;frames&quot;:0},{&quot;id&quot;:&quot;t-e864f2c0&quot;,&quot;from&quot;:&quot;s-990e5e06&quot;,&quot;to&quot;:&quot;s-fd0808a7&quot;,&quot;frames&quot;:0}],&quot;regions&quot;:[{&quot;id&quot;:&quot;r-f0c17927&quot;,&quot;x&quot;:736.7887573242188,&quot;y&quot;:56.157623291015625,&quot;radius&quot;:595.1885375976562,&quot;title&quot;:&quot;MainRegion&quot;},{&quot;id&quot;:&quot;r-4d199510&quot;,&quot;x&quot;:1109,&quot;y&quot;:787,&quot;radius&quot;:406.0738830566406,&quot;title&quot;:&quot;Region 2&quot;}]}" />
             <Pin Id="RgbdYeOxjXVNd0Rfy7He4u" Name="Reset Target" Kind="InputPin" />
             <Pin Id="CevVNNxmT5mMs1Ana8AeAL" Name="Reset" Kind="InputPin" />
             <Pin Id="AjpCrN8peFIOzdq0i2TaJ5" Name="Active State" Kind="OutputPin" />
@@ -75,6 +75,7 @@
             <Pin Id="UQQkJcCiuPcOrqMr67zfS2" Name="Transition Titles" Kind="OutputPin" />
             <Pin Id="VFfHgzYO2FOOKLdVSUk3dw" Name="Region Active" Kind="OutputPin" />
             <Pin Id="VNFinARa1anNGbKrktsH9a" Name="Region Names" Kind="OutputPin" />
+            <Pin Id="N0iUzRsLYHmMubn0mDkSCT" Name="Automata" Kind="OutputPin" />
             <Pin Id="PeNf0w8WHnjPsnEHE3KJvY" Name="Editor" Kind="OutputPin" />
             <Pin Id="MWj8J77s5qEO8RwO5JgDCG" Name="No UIMode" Kind="InputPin" />
             <Pin Id="HbFlUfbnwSROXFzwNIvGsx" Name="No Background" Kind="InputPin" DefaultValue="False" IsHidden="true" />
@@ -129,7 +130,7 @@
               <p:buttonmode p:Assembly="VL.UI.Forms" p:Type="VL.HDE.PatchEditor.Editors.ButtonModeEnum">Bang</p:buttonmode>
             </p:ValueBoxSettings>
           </Pad>
-          <Pad Id="VxeqgqVgj4fNpXZxrxdNHP" Comment="Region Active" Bounds="323,240,35,34" ShowValueBox="true" isIOBox="true" />
+          <Pad Id="VxeqgqVgj4fNpXZxrxdNHP" Comment="Region Active" Bounds="323,240,35,49" ShowValueBox="true" isIOBox="true" />
           <Pad Id="HmNHGgEdFQDNzmSrdSQGe7" Comment="No UIMode" Bounds="208,101,35,35" ShowValueBox="true" isIOBox="true" Value="False">
             <p:TypeAnnotation LastCategoryFullName="Primitive" LastDependency="VL.CoreLib.vl">
               <Choice Kind="ImmutableTypeFlag" Name="Boolean" />
@@ -138,6 +139,33 @@
               <p:buttonmode p:Assembly="VL.UI.Forms" p:Type="VL.HDE.PatchEditor.Editors.ButtonModeEnum">Toggle</p:buttonmode>
             </p:ValueBoxSettings>
           </Pad>
+          <Node Bounds="83,580,82,19" Id="OwSZp7q5D11O1Z4iSYc1i5">
+            <p:NodeReference LastCategoryFullName="Automata" LastDependency="VL.Automata.csproj">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="GetActiveState" />
+            </p:NodeReference>
+            <Pin Id="Sq4i2DisI26MYSk1zKxeeG" Name="Automata" Kind="InputPin" />
+            <Pin Id="HoKX8tlYNG0PoaGsnVIsJK" Name="Active State" Kind="OutputPin" />
+            <Pin Id="LvVvz2YwolxM2Qy6z4gPeZ" Name="State Frames" Kind="OutputPin" />
+          </Node>
+          <Node Bounds="144,660,105,19" Id="H2qwNe2FahuO1mra7G9cPe">
+            <p:NodeReference LastCategoryFullName="Automata" LastDependency="VL.Automata.csproj">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="GetActiveTransition" />
+            </p:NodeReference>
+            <Pin Id="TLsUhWPO928PecXwZbf1Ei" Name="Automata" Kind="InputPin" />
+            <Pin Id="BAaJUFjoPiDQW5cME1ZQsp" Name="Transition Title" Kind="OutputPin" />
+            <Pin Id="GmOpy5kSaBSPi7dBOvxMNU" Name="Next State" Kind="OutputPin" />
+            <Pin Id="Lai12sqYazgM0Nn9WS0a6p" Name="Transition Countdown" Kind="OutputPin" />
+          </Node>
+          <Node Bounds="410,670,91,19" Id="AXUy9i5kQfbQaKGdNBireC">
+            <p:NodeReference LastCategoryFullName="Automata" LastDependency="VL.Automata.csproj">
+              <Choice Kind="NodeFlag" Name="Node" Fixed="true" />
+              <Choice Kind="ProcessAppFlag" Name="GetActiveRegion" />
+            </p:NodeReference>
+            <Pin Id="MZKsEisT2a5OpI1GBVNzn9" Name="Automata" Kind="InputPin" />
+            <Pin Id="RUkm8XJ3Wg6OoIC3dLrFhQ" Name="Active Regions" Kind="OutputPin" />
+          </Node>
         </Canvas>
         <Patch Id="E5lUQ1tTxo7PzUDY5hwxkn" Name="Create" />
         <Patch Id="EYvNKw8whziMBUu3qNUidj" Name="Update" />
@@ -157,6 +185,9 @@
         <Link Id="Khje06VJxbtMSLC7mriaFG" Ids="VFfHgzYO2FOOKLdVSUk3dw,VxeqgqVgj4fNpXZxrxdNHP" />
         <Link Id="MNVZzPtMk1YOCWfxvJnzmA" Ids="HmNHGgEdFQDNzmSrdSQGe7,MWj8J77s5qEO8RwO5JgDCG" />
         <Link Id="J8oVGVglprELRAukFrh4Yb" Ids="PeNf0w8WHnjPsnEHE3KJvY,EZDwJ0lihXrLub2R47ON3b" />
+        <Link Id="K84QVfiy4GKOWENdgEx2J6" Ids="N0iUzRsLYHmMubn0mDkSCT,Sq4i2DisI26MYSk1zKxeeG" />
+        <Link Id="JM169lTh1PNNnByK0u9UUZ" Ids="N0iUzRsLYHmMubn0mDkSCT,TLsUhWPO928PecXwZbf1Ei" />
+        <Link Id="Ajvj5cPedbQPmZ9B5ehAm6" Ids="N0iUzRsLYHmMubn0mDkSCT,MZKsEisT2a5OpI1GBVNzn9" />
       </Patch>
     </Node>
   </Patch>

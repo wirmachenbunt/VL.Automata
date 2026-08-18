@@ -160,6 +160,11 @@ public class AutomataNode : IDisposable
         out Spread<string> transitionTitles,
         out Spread<float> regionActive,
         out Spread<string> regionNames,
+        // One-cable bundle of everything above (active state, countdown, the spreads, …)
+        // as a single immutable AutomataInfo — pass "the whole automata" downstream on one
+        // wire and unpack only what you need. Built from the same cached values, so it costs
+        // one small record per frame and shares the spreads by reference (no list copying).
+        out AutomataInfo automata,
         out ILayer? editor)
     {
         LoadIfChanged(data ?? "");
@@ -229,6 +234,14 @@ public class AutomataNode : IDisposable
         transitionTitles = _transitionTitlesCache;
         regionActive = _regionActiveCache;
         regionNames = _regionNamesCache;
+
+        // Bundle the same values into the one-cable snapshot. The scalars are copied; the
+        // four spreads are the caches above, shared by reference (they're immutable).
+        automata = new AutomataInfo(
+            activeState, activeId ?? "", nextState, _engine.PendingTransitionTitle,
+            _engine.PendingTransitionId is not null,
+            stateFrames, transitionCountdown,
+            _statesCache, _transitionTitlesCache, _regionActiveCache, _regionNamesCache);
 
         // Wrap the ImGui widget into a Skia layer for direct output. _toSkia.Update
         // refreshes the ImGui draw data; the output is _editorLayer (_toSkia wrapped in

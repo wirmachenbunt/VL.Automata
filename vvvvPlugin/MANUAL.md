@@ -11,14 +11,13 @@ This manual is for *using* the node. For how it's built and why, see [DEVNOTES.m
 ## Contents
 
 1. [Concepts](#1-concepts)
-2. [Adding the node](#2-adding-the-node)
-3. [Quick start](#3-quick-start)
-4. [The editor](#4-the-editor)
-5. [Running the machine](#5-running-the-machine)
-6. [Pin reference](#6-pin-reference)
-7. [Saving your machine (the Data pin)](#7-saving-your-machine-the-data-pin)
-8. [Performance & display options](#8-performance--display-options)
-9. [Tips & troubleshooting](#9-tips--troubleshooting)
+2. [Quick start](#2-quick-start)
+3. [The editor](#3-the-editor)
+4. [Running the machine](#4-running-the-machine)
+5. [Pin reference](#5-pin-reference)
+6. [Saving your machine (the Data pin)](#6-saving-your-machine-the-data-pin)
+7. [Performance & display options](#7-performance--display-options)
+8. [Tips & troubleshooting](#8-tips--troubleshooting)
 
 ---
 
@@ -39,19 +38,7 @@ This manual is for *using* the node. For how it's built and why, see [DEVNOTES.m
 
 ---
 
-## 2. Adding the node
-
-1. Make the built `VL.Automata.dll` available to your patch — in gamma, add a dependency on the DLL
-   (or reference the `.csproj` while developing).
-2. In the patch, create the node **`Automata`** (category **`Automata`**).
-3. A fresh node initialises itself to a machine containing just a **START** state and stores it — no
-   file to set up.
-
-> The node is a normal `[ProcessNode]`, so it hot-reloads when the library is rebuilt.
-
----
-
-## 3. Quick start
+## 2. Quick start
 
 1. **Drop the `Automata` node.**
 2. **Wire `Editor` → a Skia renderer / RenderWindow.** `Editor` is already a Skia layer; connect it
@@ -68,7 +55,7 @@ Your machine is **saved inside the patch** automatically. There's no external fi
 
 ---
 
-## 4. The editor
+## 3. The editor
 
 The editor is the window you get by wiring `Editor` into a renderer. Everything is drawn on a
 pannable, zoomable canvas.
@@ -131,7 +118,7 @@ active state across edits wherever that state still exists.
 
 ---
 
-## 5. Running the machine
+## 4. Running the machine
 
 The machine advances **one step per patch frame** automatically — you don't need to clock it.
 
@@ -183,7 +170,7 @@ the other. A region reads **1** whenever the active state's circle lies within t
 
 ---
 
-## 6. Pin reference
+## 5. Pin reference
 
 | Direction | Pin | Type | Meaning |
 |-----------|-----|------|---------|
@@ -205,7 +192,7 @@ the other. A region reads **1** whenever the active state's circle lies within t
 
 ---
 
-## 7. Saving your machine (the `Data` pin)
+## 6. Saving your machine (the `Data` pin)
 
 Your machine lives on the **`Data`** input pin as JSON and is **saved inside the `.vl` patch** —
 there is no external file.
@@ -222,7 +209,7 @@ there is no external file.
 
 ---
 
-## 8. Performance & display options
+## 7. Performance & display options
 
 - **`No UI Mode`** — the editor's per-frame drawing is the node's biggest cost. In a finished or
   exported patch where you don't need to see or edit the machine, set `No UI Mode = true`: the
@@ -234,7 +221,7 @@ there is no external file.
 
 ---
 
-## 9. Tips & troubleshooting
+## 8. Tips & troubleshooting
 
 - **My `Fire` bang did nothing.** A transition only fires when its *from* state is the current
   active state and nothing else is transitioning. Check `Active State`, and that no

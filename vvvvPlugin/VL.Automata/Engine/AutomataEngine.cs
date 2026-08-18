@@ -50,6 +50,10 @@ public sealed class AutomataEngine
     public string? PendingTransitionId => _pending?.Id;
     public string ActiveState => _activeStateId is null ? "" : GetStateLabel(_activeStateId);
     public string NextState => _pending is null ? "" : GetStateLabel(_pending.To);
+    // "A to B" title of the transition currently in progress (empty when none) — same
+    // format as the transition pins (BuildTransitionPins), for the active-transition output.
+    public string PendingTransitionTitle =>
+        _pending is null ? "" : $"{GetStateLabel(_pending.From)} to {GetStateLabel(_pending.To)}";
     public int StateFrames => _stateFrames;
     public double TransitionCountdown => GetNormalizedTransitionCountdown();
     public IReadOnlyList<string> States => _resetTargets.Select(t => t.Label).ToList();
