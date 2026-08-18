@@ -353,17 +353,46 @@ function initKonvaUI(container)
 
         // ===================== Geometry & rendering (sync Konva nodes to data) =====================
 
-        function getTransitionPoints(from, to)
+        // A transition gets a small perpendicular shift when its reverse (to→from)
+        // also exists, so the two are drawn — and picked — with a gap instead of
+        // overlapping. Each direction uses its own left normal (of to-from), so the
+        // pair separates symmetrically. When two states have transitions both ways,
+        // the label also slides to 30% along its own direction; since the reverse
+        // runs the other way, the pair lands at 30%/70% and the labels no longer
+        // stack. A lone transition keeps its centred label and no offset.
+        const TRANSITION_GAP = 16;          // perpendicular shift each side (doc units)
+        const LABEL_FRAC_WITH_REVERSE = 0.3; // label position along the line
+
+        function hasReverseTransition(transition)
+        {
+            return transitions.some((o) =>
+                o && o.id !== transition.id && o.from === transition.to && o.to === transition.from);
+        }
+
+        function getTransitionPoints(from, to, gapOffset)
         {
             const dx = to.x - from.x;
             const dy = to.y - from.y;
             let angle = Math.atan2(-dy, dx);
             const radius = 55;
+            let ox = 0;
+            let oy = 0;
+            if (gapOffset)
+            {
+                const len = Math.hypot(dx, dy);
+                if (len > 0.0001)
+                {
+                    // Left normal of (dx, dy). The reverse transition swaps from/to,
+                    // which flips (dx, dy) and thus this offset — separating the pair.
+                    ox = (-dy / len) * gapOffset;
+                    oy = (dx / len) * gapOffset;
+                }
+            }
             return [
-                from.x + -radius * Math.cos(angle + Math.PI),
-                from.y + radius * Math.sin(angle + Math.PI),
-                to.x + -radius * Math.cos(angle),
-                to.y + radius * Math.sin(angle),
+                from.x + -radius * Math.cos(angle + Math.PI) + ox,
+                from.y + radius * Math.sin(angle + Math.PI) + oy,
+                to.x + -radius * Math.cos(angle) + ox,
+                to.y + radius * Math.sin(angle) + oy,
             ];
         }
 
@@ -443,7 +472,9 @@ function initKonvaUI(container)
 
                 if (!fromNode || !toNode) return;
 
-                const points = getTransitionPoints(fromNode.position(), toNode.position());
+                const reversed = hasReverseTransition(transition);
+                const points = getTransitionPoints(
+                    fromNode.position(), toNode.position(), reversed ? TRANSITION_GAP : 0);
                 line.points(points);
                 const isTransitionActive = activeTransitionId && transition.id === activeTransitionId;
                 const lineColor = isTransitionActive ? COLORS.transitionActive : COLORS.transitionCyan;
@@ -452,8 +483,11 @@ function initKonvaUI(container)
                 if (label && labelText && labelBg)
                 {
                     const nextText = getTransitionLabelText(transition);
-                    const midX = (points[0] + points[2]) / 2;
-                    const midY = (points[1] + points[3]) / 2;
+                    // Slide the label to 30% along its own direction when a reverse
+                    // transition exists (else centred), so the two don't overlap.
+                    const frac = reversed ? LABEL_FRAC_WITH_REVERSE : 0.5;
+                    const midX = points[0] + (points[2] - points[0]) * frac;
+                    const midY = points[1] + (points[3] - points[1]) * frac;
                     label.position({ x: midX, y: midY });
                     labelBg.fill(isTransitionActive ? COLORS.transitionLabelBgActive : COLORS.transitionLabelBg);
                     if (labelText.getAttr("cachedText") !== nextText)
@@ -1386,7 +1420,9 @@ function initKonvaUI(container)
                 y: (pointer.y - stage.y()) / oldScale,
             };
 
-            let direction = e.evt.deltaY > 0 ? 1 : -1;
+            // Scroll up (deltaY < 0) zooms in, scroll down zooms out — the usual
+            // convention. ctrlKey (trackpad pinch) inverts deltaY, so flip back.
+            let direction = e.evt.deltaY > 0 ? -1 : 1;
             if (e.evt.ctrlKey) direction = -direction;
 
             const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
