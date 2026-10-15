@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Package staging nuspec. Paths are relative to THIS folder (nuget/), which mirrors the final package
+  layout 1:1 — so VL.Automata.vl's "./lib/net8.0-windows7.0/VL.Automata.dll" resolves the same here
+  and inside the installed package. Repack with pack.ps1 (it refreshes the Release dll/xml + README +
+  the staged .vl and help patch).
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>VL.Automata</id>
+    <!-- Bump for every published release (semver). nuget.org rejects re-pushing an existing version. -->
+    <version>0.1.0</version>
+    <title>VL.Automata</title>
+    <authors>wirmachenbunt</authors>
+    <owners></owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/wirmachenbunt/VL.Automata</projectUrl>
+    <description>A finite-state-machine (FSM) editor node for vvvv gamma, ported from the cables op Ops.Local.Automata. Author a state machine in an interactive ImGui editor window — states, transitions and regions — rendered as a VL.Skia layer. The machine is stored inside the .vl patch; the running node reports the active state, frame counters and region activity, and fires transitions through a dynamic per-transition bang pin group.</description>
+    <copyright>2026 wirmachenbunt</copyright>
+    <tags>vvvv VL fsm state-machine automata statemachine editor imgui skia</tags>
+    <repository type="git" url="https://github.com/wirmachenbunt/VL.Automata" />
+    <dependencies>
+      <!-- Non-core vvvv packages Automata needs (VL.CoreLib ships with gamma + is declared in the .vl). -->
+      <group targetFramework="net8.0-windows7.0">
+        <dependency id="VL.ImGui" version="2025.7.4" exclude="Build,Analyzers" />
+        <dependency id="VL.ImGui.Skia" version="2025.7.4" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <!-- Entry point at package root (name = package id). Its PlatformDependency points at ./lib below. -->
+    <file src="VL.Automata.vl" target="" />
+    <!-- Compiled nodes + XML tooltips, laid out exactly as referenced by the .vl. -->
+    <file src="lib\net8.0-windows7.0\VL.Automata.dll" target="lib\net8.0-windows7.0" />
+    <file src="lib\net8.0-windows7.0\VL.Automata.xml" target="lib\net8.0-windows7.0" />
+    <!-- README shown on nuget.org. -->
+    <file src="README.md" target="" />
+    <!-- Example / reference patch (depends on the VL.Automata package, not the .csproj). -->
+    <file src="help\vvvv_automata_testbed.vl" target="help" />
+    <file src="icon.png" target="" />
+  </files>
+</package>

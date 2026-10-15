@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document xmlns:p="property" xmlns:r="reflection" Id="Au70mata0Entry0Patch0A" LanguageVersion="2025.7.4" Version="0.128">
+  <NugetDependency Id="Au70mata0CoreLibDep0A" Location="VL.CoreLib" Version="2025.7.4" />
+  <Patch Id="Au70mata0PatchRoot00A">
+    <Canvas Id="Au70mata0Canvas0000A" DefaultCategory="Automata" CanvasType="FullCategory" />
+    <!--
+
+    ************************ Application ************************
+
+-->
+    <Node Name="Application" Bounds="100,100" Id="Au70mata0AppNode000A">
+      <p:NodeReference>
+        <Choice Kind="ContainerDefinition" Name="Process" />
+        <CategoryReference Kind="Category" Name="Primitive" />
+      </p:NodeReference>
+      <Patch Id="Au70mata0AppPatch00A">
+        <Canvas Id="Au70mata0AppCanvas0A" CanvasType="Group" />
+        <Patch Id="Au70mata0CreatePatcA" Name="Create" />
+        <Patch Id="Au70mata0UpdatePatcA" Name="Update" />
+        <ProcessDefinition Id="Au70mata0ProcDef000A">
+          <Fragment Id="Au70mata0FragCreate0A" Patch="Au70mata0CreatePatcA" Enabled="true" />
+          <Fragment Id="Au70mata0FragUpdate0A" Patch="Au70mata0UpdatePatcA" Enabled="true" />
+        </ProcessDefinition>
+      </Patch>
+    </Node>
+  </Patch>
+  <PlatformDependency Id="Au70mata0PlatformDepA" Location="./VL.Automata/bin/Release/net8.0-windows/VL.Automata.dll" IsForward="true" />
+</Document>
