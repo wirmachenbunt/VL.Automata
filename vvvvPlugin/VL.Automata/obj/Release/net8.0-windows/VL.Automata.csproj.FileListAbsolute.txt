@@ -12,3 +12,17 @@
 /Users/christianengler/Documents/AutomataX/vvvvPlugin/VL.Automata/obj/Release/net8.0-windows/VL.Automata.xml
 /Users/christianengler/Documents/AutomataX/vvvvPlugin/VL.Automata/obj/Release/net8.0-windows/VL.Automata.pdb
 /Users/christianengler/Documents/AutomataX/vvvvPlugin/VL.Automata/obj/Release/net8.0-windows/ref/VL.Automata.dll
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Release\net8.0-windows\VL.Automata.deps.json
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Release\net8.0-windows\VL.Automata.dll
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Release\net8.0-windows\VL.Automata.pdb
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\bin\Release\net8.0-windows\VL.Automata.xml
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.csproj.AssemblyReference.cache
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.AssemblyInfoInputs.cache
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.AssemblyInfo.cs
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.csproj.CoreCompileInputs.cache
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.dll
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\refint\VL.Automata.dll
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.xml
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\VL.Automata.pdb
+C:\Users\user\Documents\AutomataX\vvvvPlugin\VL.Automata\obj\Release\net8.0-windows\ref\VL.Automata.dll
