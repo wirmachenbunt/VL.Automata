@@ -1,5 +1,7 @@
 # VL.Automata — vvvv gamma port of the cables Automata op
 
+![VL.Automata FSM editor](https://raw.githubusercontent.com/wirmachenbunt/VL.Automata/main/vvvvPlugin/automatascreenshot.png)
+
 A finite-state-machine node for vvvv gamma, ported from the cables op
 `Ops.Local.Automata`. The state machine is authored in an ImGui editor **window**
 (not a docked tab); the running node reports the active state, frame counters and
