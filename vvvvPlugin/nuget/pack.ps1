@@ -5,12 +5,13 @@
 
   It (1) builds Release, (2) refreshes the staged payload under nuget/ (the folder that mirrors the
   final package layout 1:1), (3) regenerates nuget/VL.Automata.vl from the dev VL.Automata.vl —
-  rewriting the dev DLL path to the in-package ./lib/<tfm>/ path — (4) regenerates the staged help
-  patch from the dev testbed — rewriting its dev ProjectDependency into a NugetDependency on the
-  VL.Automata package at the version being packed — and (5) packs the .nupkg into the repo root.
+  rewriting the dev DLL path to the in-package ./lib/<tfm>/ path — (4) keeps the bundled help patch's
+  package-dependency version in sync with the version being packed — and (5) packs the .nupkg into
+  the repo root.
 
-  Only VL.Automata.nuspec and this script are source; everything else under nuget/ is generated
-  (see nuget/.gitignore).
+  Source (committed): VL.Automata.nuspec, this script, make-icon.ps1, icon.png and help/ (the example
+  patch — it is hand-maintained now that the dev testbed was removed). Everything else under nuget/ is
+  generated (see nuget/.gitignore).
 #>
 param([string]$Version)
 
@@ -51,19 +52,23 @@ if ($vl -notmatch [regex]::Escape($libDllPath)) {
 }
 Set-Content (Join-Path $stage 'VL.Automata.vl') $vl -Encoding UTF8
 
-# 5. Regenerate the staged help patch from the dev testbed, swapping the dev project reference
-#    (<ProjectDependency Location="./VL.Automata/VL.Automata.csproj" />) for a package reference at
-#    the version being packed, so the bundled example resolves against the installed VL.Automata.
-$helpDir = Join-Path $stage 'help'
-New-Item -ItemType Directory -Force -Path $helpDir | Out-Null
-$help = Get-Content (Join-Path $root 'vvvv_automata_testbed.vl') -Raw
-$projDepPattern = '<ProjectDependency\s+Location="\./VL\.Automata/VL\.Automata\.csproj"\s*/>'
-$pkgDep = "<NugetDependency Id=`"Au70mata0HelpPkgDep0A`" Location=`"VL.Automata`" Version=`"$pkgVersion`" />"
-if ($help -notmatch $projDepPattern) {
-    throw "Could not find the dev ProjectDependency in vvvv_automata_testbed.vl - check it still reads Location=`"./VL.Automata/VL.Automata.csproj`"."
+# 5. Keep the bundled help patch's package dependency in sync with the version being packed.
+#    The example patch (nuget/help/Reference Automata.vl) is a committed source now that the dev
+#    testbed was removed; we only rewrite its VL.Automata dependency version so the bundled example
+#    always resolves against the matching published package. Only writes back when it changes.
+$helpFile = Join-Path $stage 'help\Reference Automata.vl'
+if (Test-Path $helpFile) {
+    $help   = Get-Content $helpFile -Raw
+    $synced = [regex]::Replace($help,
+        '(<NugetDependency\s+Id="Au70mata0HelpPkgDep0A"\s+Location="VL\.Automata"\s+Version=")[^"]*(")',
+        "`${1}$pkgVersion`${2}")
+    if ($synced -notmatch "Location=`"VL.Automata`" Version=`"$([regex]::Escape($pkgVersion))`"") {
+        throw "Could not sync the VL.Automata dependency version in 'help\Reference Automata.vl' - check its NugetDependency line."
+    }
+    if ($synced -ne $help) { Set-Content $helpFile $synced -Encoding UTF8 }
+} else {
+    throw "Missing 'nuget\help\Reference Automata.vl' - the bundled example patch is required by the nuspec."
 }
-$help = [regex]::Replace($help, $projDepPattern, $pkgDep)
-Set-Content (Join-Path $helpDir 'vvvv_automata_testbed.vl') $help -Encoding UTF8
 
 # 6. Pack into the repo root
 dotnet pack $proj -c Release --no-build `

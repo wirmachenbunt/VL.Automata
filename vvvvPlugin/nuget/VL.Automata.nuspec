@@ -38,8 +38,8 @@
     <file src="lib\net8.0-windows7.0\VL.Automata.xml" target="lib\net8.0-windows7.0" />
     <!-- README shown on nuget.org. -->
     <file src="README.md" target="" />
-    <!-- Example / reference patch (depends on the VL.Automata package, not the .csproj). -->
-    <file src="help\vvvv_automata_testbed.vl" target="help" />
+    <!-- Example / reference patch (committed source; depends on the VL.Automata package). -->
+    <file src="help\Reference Automata.vl" target="help" />
     <file src="icon.png" target="" />
   </files>
 </package>
