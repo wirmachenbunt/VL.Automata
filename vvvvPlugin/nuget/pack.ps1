@@ -20,18 +20,23 @@ $stage = $PSScriptRoot                                   # the nuget/ folder
 $root  = Split-Path $stage -Parent                       # project root (vvvvPlugin/)
 $proj  = Join-Path $root 'VL.Automata\VL.Automata.csproj'
 $tfm   = 'net8.0-windows7.0'
-$built = Join-Path $root 'VL.Automata\bin\Release\net8.0-windows'
 $devDllPath = './VL.Automata/bin/Release/net8.0-windows/VL.Automata.dll'   # path used in the dev .vl
 $libDllPath = "./lib/$tfm/VL.Automata.dll"                                  # path inside the package
+# Both targets: lib/<package tfm> <- bin/Release/<build tfm>. vvvv gamma 7.x takes net8.0-windows7.0,
+# gamma 8.0 (and its macOS and Linux exports) net10.0.
+$targets = [ordered]@{ 'net8.0-windows7.0' = 'net8.0-windows'; 'net10.0' = 'net10.0' }
 
-# 1. Build Release
+# 1. Build Release (both target frameworks)
 dotnet build $proj -c Release
 
-# 2. Refresh staged payload (lib + README)
-$libDir = Join-Path $stage "lib\$tfm"
-New-Item -ItemType Directory -Force -Path $libDir | Out-Null
-Copy-Item (Join-Path $built 'VL.Automata.dll') $libDir -Force
-Copy-Item (Join-Path $built 'VL.Automata.xml') $libDir -Force
+# 2. Refresh staged payload (lib per target + README)
+foreach ($t in $targets.GetEnumerator()) {
+    $built  = Join-Path $root "VL.Automata\bin\Release\$($t.Value)"
+    $libDir = Join-Path $stage "lib\$($t.Key)"
+    New-Item -ItemType Directory -Force -Path $libDir | Out-Null
+    Copy-Item (Join-Path $built 'VL.Automata.dll') $libDir -Force
+    Copy-Item (Join-Path $built 'VL.Automata.xml') $libDir -Force
+}
 Copy-Item (Join-Path $root  'README.md')       $stage  -Force
 
 # 3. Optionally bump the version in the nuspec, then read back the version to pack.

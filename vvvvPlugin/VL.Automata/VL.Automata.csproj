@@ -3,13 +3,18 @@
     vvvv gamma library for the Automata FSM node — a port of the cables op
     Ops.Local.Automata.
 
-    Targets net8.0-windows because the node outputs a VL.Skia ILayer directly (it
-    wraps the ImGui editor widget with VL.ImGui.ToSkiaLayer in C#), and
-    VL.ImGui.Skia / VL.Skia are net8.0-windows only. EnableWindowsTargeting lets
-    this still build on non-Windows (dev on macOS) via the Windows targeting packs.
+    Two targets in one package, NuGet picks the matching one:
+    - net8.0-windows for vvvv gamma 7.x (and earlier .NET 8 versions): the node
+      outputs a VL.Skia ILayer directly (it wraps the ImGui editor widget with
+      VL.ImGui.ToSkiaLayer in C#), and gamma 7's VL.ImGui.Skia / VL.Skia are
+      net8.0-windows only.
+    - net10.0 for vvvv gamma 8.0, whose VL packages are plain net10.0. Nothing here
+      is Windows specific, so macOS and Linux exports of gamma 8.0 can restore it.
+    EnableWindowsTargeting lets this still build on non-Windows (dev on macOS) via
+    the Windows targeting packs.
   -->
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFrameworks>net8.0-windows;net10.0</TargetFrameworks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -19,10 +24,15 @@
     <!-- vvvv reads the doc file for tooltips; we don't doc every DTO member. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- vvvv gamma 7.x packages for net8.0-windows, gamma 8.0 packages for net10.0 -->
+    <VLVersion Condition="'$(TargetFramework)' == 'net8.0-windows'">2025.7.4</VLVersion>
+    <VLVersion Condition="'$(TargetFramework)' == 'net10.0'">2026.8.0-0374-ga13b8c2c14</VLVersion>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="VL.Core" Version="2025.7.4" />
-    <PackageReference Include="VL.ImGui" Version="2025.7.4" />
-    <PackageReference Include="VL.ImGui.Skia" Version="2025.7.4" />
+    <PackageReference Include="VL.Core" Version="$(VLVersion)" />
+    <PackageReference Include="VL.ImGui" Version="$(VLVersion)" />
+    <PackageReference Include="VL.ImGui.Skia" Version="$(VLVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="VL.Core" />
